@@ -8,7 +8,7 @@ export const Route = createFileRoute("/quote")({
   validateSearch: (s: Record<string, unknown>) => ({ pkg: (s.pkg as string) || "" }),
   head: () => ({
     meta: [
-      { title: "Request a Quote — Aurum & Olive" },
+      { title: "Request a Quote — Twinkles Events Namibia" },
       { name: "description", content: "Share your event details and receive an itemized digital proposal within 48 hours." },
     ],
   }),
@@ -135,12 +135,12 @@ function Quote() {
               className="input"
             />
           </Field>
-          <Field label="Estimated budget (USD)">
+          <Field label="Estimated budget (N$)">
             <input
               value={form.budget}
               onChange={(e) => setForm({ ...form, budget: e.target.value })}
               className="input"
-              placeholder="e.g. 5,000 – 10,000"
+              placeholder="e.g. N$80,000 – N$150,000"
             />
           </Field>
           <Field label="Vision & notes">

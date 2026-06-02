@@ -5,7 +5,7 @@ import { upcomingEvent, payments } from "@/lib/mockData";
 export const Route = createFileRoute("/portal")({
   head: () => ({
     meta: [
-      { title: "Client Portal — Aurum & Olive" },
+      { title: "Client Portal — Twinkles Events Namibia" },
       { name: "description", content: "Track your event progress, message your coordinator, and manage payments." },
     ],
   }),
@@ -117,7 +117,7 @@ function Portal() {
                   <tr key={inv.id} className="border-t border-brand-primary/5">
                     <td className="py-4 font-serif">{inv.id}</td>
                     <td className="py-4 text-brand-primary/60">{inv.date}</td>
-                    <td className="py-4 font-serif">${inv.amount.toLocaleString()}</td>
+                    <td className="py-4 font-serif">N${inv.amount.toLocaleString()}</td>
                     <td className="py-4 text-right">
                       <span
                         className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold ${
