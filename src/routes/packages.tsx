@@ -5,8 +5,8 @@ import { packages } from "@/lib/mockData";
 export const Route = createFileRoute("/packages")({
   head: () => ({
     meta: [
-      { title: "Packages — Aurum & Olive" },
-      { name: "description", content: "Browse curated event decor packages: garden weddings, corporate galas, and intimate soirées." },
+      { title: "Packages — Twinkles Events Namibia" },
+      { name: "description", content: "Browse curated event decor packages: garden weddings, corporate galas, and intimate soirées across Namibia." },
     ],
   }),
   component: Packages,
@@ -47,7 +47,7 @@ function Packages() {
                 <div className="grid grid-cols-2 gap-4 mb-8 py-6 border-y border-brand-primary/10">
                   <div>
                     <p className="text-[10px] uppercase tracking-widest text-brand-primary/40 mb-1">Starting at</p>
-                    <p className="text-xl font-serif">${p.price.toLocaleString()}</p>
+                    <p className="text-xl font-serif">N${p.price.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-widest text-brand-primary/40 mb-1">Capacity</p>

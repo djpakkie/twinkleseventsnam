@@ -7,10 +7,10 @@ import studio from "@/assets/studio.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Aurum & Olive — Event Design & Decor" },
-      { name: "description", content: "Editorial event design, decor, and full-service planning. Browse packages, request quotes, and track your event in one place." },
-      { property: "og:title", content: "Aurum & Olive — Event Design & Decor" },
-      { property: "og:description", content: "Editorial event design, decor, and full-service planning." },
+      { title: "Twinkles Events Namibia — Event Design & Decor" },
+      { name: "description", content: "Editorial event design, decor, and full-service planning across Namibia. Browse packages, request quotes, and track your event in one place." },
+      { property: "og:title", content: "Twinkles Events Namibia — Event Design & Decor" },
+      { property: "og:description", content: "Editorial event design, decor, and full-service planning across Namibia." },
     ],
   }),
   component: Landing,
@@ -60,7 +60,7 @@ function Landing() {
               <p className="text-xs font-serif italic text-brand-accent mb-2">Featured Design</p>
               <p className="text-sm font-medium">The Solstice Gala</p>
               <p className="text-[10px] text-brand-primary/50 uppercase tracking-tighter mt-1">
-                Cotswolds, UK · 2026
+                Swakopmund, Namibia · 2026
               </p>
             </div>
           </div>
@@ -114,7 +114,7 @@ function Landing() {
                 </div>
                 <p className="text-[10px] uppercase tracking-widest text-brand-accent mb-1">{p.tagline}</p>
                 <h3 className="text-2xl mb-1">{p.name}</h3>
-                <p className="text-xs font-serif italic text-brand-primary/60">From ${p.price.toLocaleString()}</p>
+                <p className="text-xs font-serif italic text-brand-primary/60">From N${p.price.toLocaleString()}</p>
               </Link>
             ))}
           </div>
