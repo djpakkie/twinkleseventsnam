@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
 import {
   leads as seedLeads,
