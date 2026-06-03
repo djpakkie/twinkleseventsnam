@@ -158,3 +158,10 @@ export const vendors = [
   { name: "Desert Linens", category: "Linens & Rentals", rating: 4.5, jobs: 17, status: "active" },
   { name: "Brass & Bloom Calligraphy", category: "Stationery", rating: 5.0, jobs: 9, status: "trial" },
 ];
+
+export const adminUser = {
+  name: "Administrator",
+  email: "djpakkie@gmail.com",
+  role: "Owner",
+  rights: "Full access · all modules",
+};
