@@ -10,6 +10,7 @@ import {
   aiQuoteSuggestions,
   followUps,
   vendors,
+  adminUser,
 } from "@/lib/mockData";
 
 export const Route = createFileRoute("/admin")({
@@ -29,6 +30,21 @@ const statusStyles: Record<string, string> = {
   confirmed: "bg-brand-primary text-primary-foreground",
 };
 
+const sections = [
+  { id: "overview", label: "Overview" },
+  { id: "leads", label: "Lead pipeline" },
+  { id: "notifications", label: "Notifications" },
+  { id: "calendar", label: "Calendar" },
+  { id: "inventory", label: "Inventory" },
+  { id: "payments", label: "Payments" },
+  { id: "staff", label: "Staff" },
+  { id: "mobile", label: "Mobile app" },
+  { id: "ai", label: "AI quotes" },
+  { id: "gateways", label: "Online payments" },
+  { id: "followups", label: "Follow-ups" },
+  { id: "vendors", label: "Vendors" },
+];
+
 function Admin() {
   const totalRevenue = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const pipeline = leads.reduce((s, l) => s + l.estimate, 0);
@@ -38,33 +54,88 @@ function Admin() {
   return (
     <div className="min-h-screen bg-brand-bg">
       <SiteNav />
-      <main className="px-6 md:px-10 py-12 max-w-7xl mx-auto">
-        <div className="flex items-end justify-between mb-12">
-          <div>
-            <p className="eyebrow mb-3">Management Terminal</p>
-            <h1 className="text-4xl font-serif italic">Business operations</h1>
-          </div>
-          <span className="text-xs text-brand-primary/40">Last updated · 14:02</span>
-        </div>
-
-        {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-brand-primary/10 mb-12 border border-brand-primary/10">
-          {[
-            { l: "Active leads", v: leads.length.toString() },
-            { l: "Pipeline value", v: `N$${pipeline.toLocaleString()}` },
-            { l: "Paid YTD", v: `N$${totalRevenue.toLocaleString()}` },
-            { l: "Inventory conflicts", v: conflicts.length.toString() },
-          ].map((k) => (
-            <div key={k.l} className="bg-card p-6">
-              <p className="text-[10px] uppercase tracking-widest text-brand-primary/40 mb-2">{k.l}</p>
-              <p className="text-3xl font-serif">{k.v}</p>
+      <div className="flex">
+        {/* LEFT CONTROL RAIL */}
+        <aside className="w-72 shrink-0 border-r border-brand-primary/10 bg-card sticky top-[81px] self-start h-[calc(100vh-81px)] overflow-y-auto">
+          <div className="p-6 border-b border-brand-primary/10">
+            <p className="eyebrow mb-3">Administrator</p>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="size-10 rounded-full bg-brand-primary text-primary-foreground grid place-items-center font-serif text-lg">
+                {adminUser.email[0].toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="font-serif text-sm truncate">{adminUser.name}</p>
+                <p className="text-[10px] text-brand-primary/50 truncate">{adminUser.email}</p>
+              </div>
             </div>
-          ))}
-        </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 text-[9px] uppercase tracking-widest font-bold bg-green-50 text-green-700">
+                {adminUser.role}
+              </span>
+              <span className="text-[9px] uppercase tracking-widest text-brand-primary/50">Full rights</span>
+            </div>
+          </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 mb-12">
+          <div className="p-6 border-b border-brand-primary/10 space-y-2">
+            <p className="eyebrow mb-3">Quick actions</p>
+            <button className="w-full text-left px-3 py-2 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors">
+              + New lead
+            </button>
+            <button className="w-full text-left px-3 py-2 border border-brand-primary/15 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-bg transition-colors">
+              + Assign shift
+            </button>
+            <button className="w-full text-left px-3 py-2 border border-brand-primary/15 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-bg transition-colors">
+              + Add vendor
+            </button>
+            <button className="w-full text-left px-3 py-2 border border-brand-primary/15 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-bg transition-colors">
+              Configure gateways
+            </button>
+          </div>
+
+          <nav className="p-6">
+            <p className="eyebrow mb-3">Navigate</p>
+            <ul className="space-y-1">
+              {sections.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className="block px-3 py-2 text-xs text-brand-primary/70 hover:text-brand-primary hover:bg-brand-bg border-l-2 border-transparent hover:border-brand-accent transition-all"
+                  >
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+
+        {/* MAIN */}
+        <main className="flex-1 px-6 md:px-10 py-12 max-w-6xl mx-auto scroll-smooth">
+          <div id="overview" className="flex items-end justify-between mb-12 scroll-mt-24">
+            <div>
+              <p className="eyebrow mb-3">Management Terminal</p>
+              <h1 className="text-4xl font-serif italic">Business operations</h1>
+            </div>
+            <span className="text-xs text-brand-primary/40">Last updated · 14:02</span>
+          </div>
+
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-brand-primary/10 mb-12 border border-brand-primary/10">
+            {[
+              { l: "Active leads", v: leads.length.toString() },
+              { l: "Pipeline value", v: `N$${pipeline.toLocaleString()}` },
+              { l: "Paid YTD", v: `N$${totalRevenue.toLocaleString()}` },
+              { l: "Inventory conflicts", v: conflicts.length.toString() },
+            ].map((k) => (
+              <div key={k.l} className="bg-card p-6">
+                <p className="text-[10px] uppercase tracking-widest text-brand-primary/40 mb-2">{k.l}</p>
+                <p className="text-3xl font-serif">{k.v}</p>
+              </div>
+            ))}
+          </div>
+
           {/* Leads */}
-          <div className="lg:col-span-2 bg-card p-8 border border-brand-primary/5 shadow-sm">
+          <div id="leads" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-6 scroll-mt-24">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-serif italic">Lead pipeline</h2>
               <button className="text-[10px] uppercase tracking-widest font-bold text-brand-accent">+ New lead</button>
@@ -100,13 +171,13 @@ function Admin() {
             </table>
           </div>
 
-          {/* Notifications (Phase 2) */}
-          <div className="bg-brand-primary p-8 text-primary-foreground flex flex-col">
+          {/* Notifications */}
+          <div id="notifications" className="bg-brand-primary p-8 text-primary-foreground mb-12 scroll-mt-24">
             <div className="flex justify-between items-center mb-4">
               <p className="text-[10px] uppercase tracking-widest text-brand-accent">Notifications</p>
               <span className="text-[10px] bg-brand-accent text-accent-foreground px-2 py-0.5 font-bold">{unread} new</span>
             </div>
-            <ul className="space-y-4 flex-1">
+            <ul className="space-y-4">
               {notifications.slice(0, 5).map((n) => (
                 <li key={n.id} className="text-sm leading-snug">
                   <div className="flex items-start gap-2">
@@ -120,43 +191,41 @@ function Admin() {
               ))}
             </ul>
           </div>
-        </div>
 
-        {/* Calendar */}
-        <div className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-12">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-serif italic">Booking calendar · September 2026</h2>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 text-xs border border-brand-primary/10">‹</button>
-              <button className="px-3 py-1 text-xs border border-brand-primary/10">›</button>
+          {/* Calendar */}
+          <div id="calendar" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-12 scroll-mt-24">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-serif italic">Booking calendar · September 2026</h2>
+              <div className="flex gap-2">
+                <button className="px-3 py-1 text-xs border border-brand-primary/10">‹</button>
+                <button className="px-3 py-1 text-xs border border-brand-primary/10">›</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-px bg-brand-primary/5">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                <div key={d} className="bg-card p-2 text-[10px] uppercase tracking-widest text-brand-primary/40 text-center">
+                  {d}
+                </div>
+              ))}
+              {Array.from({ length: 30 }, (_, i) => {
+                const day = i + 1;
+                const evt = leads.find((l) => l.date === `2026-09-${String(day).padStart(2, "0")}`);
+                return (
+                  <div key={day} className="bg-card aspect-square p-2 text-xs relative">
+                    <span className="text-brand-primary/40">{day}</span>
+                    {evt && (
+                      <div className="absolute bottom-1 left-1 right-1 bg-brand-accent text-accent-foreground text-[9px] px-1 py-0.5 truncate">
+                        {evt.client.split(" ")[0]}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-px bg-brand-primary/5">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <div key={d} className="bg-card p-2 text-[10px] uppercase tracking-widest text-brand-primary/40 text-center">
-                {d}
-              </div>
-            ))}
-            {Array.from({ length: 30 }, (_, i) => {
-              const day = i + 1;
-              const evt = leads.find((l) => l.date === `2026-09-${String(day).padStart(2, "0")}`);
-              return (
-                <div key={day} className="bg-card aspect-square p-2 text-xs relative">
-                  <span className="text-brand-primary/40">{day}</span>
-                  {evt && (
-                    <div className="absolute bottom-1 left-1 right-1 bg-brand-accent text-accent-foreground text-[9px] px-1 py-0.5 truncate">
-                      {evt.client.split(" ")[0]}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Inventory + Payments */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
-          <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+          {/* Inventory */}
+          <div id="inventory" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-6 scroll-mt-24">
             <h2 className="text-xl font-serif italic mb-6">Inventory</h2>
             <div className="space-y-4">
               {inventory.map((item) => {
@@ -182,7 +251,8 @@ function Admin() {
             </div>
           </div>
 
-          <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+          {/* Payments */}
+          <div id="payments" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-12 scroll-mt-24">
             <h2 className="text-xl font-serif italic mb-6">Recent payments</h2>
             <table className="w-full text-sm">
               <tbody>
@@ -212,19 +282,15 @@ function Admin() {
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* ─── Phase 2 ─── */}
-        <div className="mb-6 flex items-end justify-between">
-          <div>
+          {/* Phase 2 header */}
+          <div className="mb-6">
             <p className="eyebrow mb-2">Phase 2</p>
             <h2 className="text-3xl font-serif italic">Operations & engagement</h2>
           </div>
-        </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 mb-12">
-          {/* Staff scheduling */}
-          <div className="lg:col-span-2 bg-card p-8 border border-brand-primary/5 shadow-sm">
+          {/* Staff */}
+          <div id="staff" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-6 scroll-mt-24">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-serif italic">Staff scheduling</h3>
               <button className="text-[10px] uppercase tracking-widest font-bold text-brand-accent">+ Assign shift</button>
@@ -266,35 +332,31 @@ function Admin() {
             </table>
           </div>
 
-          {/* Mobile app teaser */}
-          <div className="bg-brand-soft p-8 border border-brand-primary/5 shadow-sm flex flex-col">
+          {/* Mobile teaser */}
+          <div id="mobile" className="bg-brand-soft p-8 border border-brand-primary/5 shadow-sm mb-12 scroll-mt-24">
             <p className="text-[10px] uppercase tracking-widest text-brand-accent mb-3">Companion App</p>
             <h3 className="text-2xl font-serif italic mb-3">On-site mobile</h3>
-            <p className="text-sm text-brand-primary/70 leading-relaxed mb-6">
+            <p className="text-sm text-brand-primary/70 leading-relaxed mb-6 max-w-xl">
               Crew check-ins, install checklists, and live photo uploads — direct from the venue.
             </p>
-            <div className="grid grid-cols-2 gap-2 mt-auto">
-              <button className="py-3 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold">
+            <div className="flex gap-2">
+              <button className="px-6 py-3 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold">
                 iOS Beta
               </button>
-              <button className="py-3 border border-brand-primary/20 text-[10px] uppercase tracking-widest font-bold">
+              <button className="px-6 py-3 border border-brand-primary/20 text-[10px] uppercase tracking-widest font-bold">
                 Android
               </button>
             </div>
           </div>
-        </div>
 
-        {/* ─── Phase 3 ─── */}
-        <div className="mb-6 flex items-end justify-between">
-          <div>
+          {/* Phase 3 header */}
+          <div className="mb-6">
             <p className="eyebrow mb-2">Phase 3</p>
             <h2 className="text-3xl font-serif italic">Automation & growth</h2>
           </div>
-        </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          {/* AI quote suggestions */}
-          <div className="bg-brand-primary p-8 text-primary-foreground">
+          {/* AI */}
+          <div id="ai" className="bg-brand-primary p-8 text-primary-foreground mb-6 scroll-mt-24">
             <div className="flex items-center gap-3 mb-6">
               <span className="text-[10px] uppercase tracking-widest text-brand-accent">AI Quote Engine</span>
               <span className="text-[9px] bg-brand-accent text-accent-foreground px-2 py-0.5 font-bold">BETA</span>
@@ -310,8 +372,8 @@ function Admin() {
             </ul>
           </div>
 
-          {/* Online payments */}
-          <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+          {/* Gateways */}
+          <div id="gateways" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-6 scroll-mt-24">
             <h3 className="text-xl font-serif italic mb-6">Online payments</h3>
             <ul className="space-y-3">
               {onlinePayments.map((p) => (
@@ -334,11 +396,9 @@ function Admin() {
               Configure gateways
             </button>
           </div>
-        </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-12">
-          {/* Automated follow-ups */}
-          <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+          {/* Follow-ups */}
+          <div id="followups" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-6 scroll-mt-24">
             <h3 className="text-xl font-serif italic mb-6">Automated follow-ups</h3>
             <ul className="space-y-4">
               {followUps.map((f) => (
@@ -364,8 +424,8 @@ function Admin() {
             </ul>
           </div>
 
-          {/* Vendor management */}
-          <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+          {/* Vendors */}
+          <div id="vendors" className="bg-card p-8 border border-brand-primary/5 shadow-sm mb-12 scroll-mt-24">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-serif italic">Vendor management</h3>
               <button className="text-[10px] uppercase tracking-widest font-bold text-brand-accent">+ Add vendor</button>
@@ -385,8 +445,8 @@ function Admin() {
               ))}
             </ul>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
       <SiteFooter />
     </div>
   );
