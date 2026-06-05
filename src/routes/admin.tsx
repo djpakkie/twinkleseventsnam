@@ -2,6 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   leads as seedLeads,
   inventory as seedInventory,
   payments as seedPayments,
@@ -12,6 +19,7 @@ import {
   vendors as seedVendors,
   adminUser,
 } from "@/lib/mockData";
+import { Eye, Pencil, Download } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -290,6 +298,10 @@ function QuotationsView({
   setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
 }) {
   const [form, setForm] = useState({ client: "", type: "", guests: "", amount: "", date: "" });
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selected, setSelected] = useState<Quotation | null>(null);
+  const [editForm, setEditForm] = useState({ client: "", type: "", guests: "", amount: "", date: "", status: "draft" as Quotation["status"] });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +319,84 @@ function QuotationsView({
     const id = `INV-${3300 + invoices.length + 1}`;
     setInvoices((inv) => [{ id, client: q.client, amount: q.amount, date: q.date, status: "pending", quoteId: q.id }, ...inv]);
     setQuotations((qs) => qs.map((x) => (x.id === q.id ? { ...x, status: "invoiced", invoiceId: id } : x)));
+  };
+
+  const openView = (q: Quotation) => {
+    setSelected(q);
+    setViewOpen(true);
+  };
+
+  const openEdit = (q: Quotation) => {
+    setSelected(q);
+    setEditForm({ client: q.client, type: q.type, guests: String(q.guests), amount: String(q.amount), date: q.date, status: q.status });
+    setEditOpen(true);
+  };
+
+  const saveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) return;
+    setQuotations((qs) =>
+      qs.map((x) =>
+        x.id === selected.id
+          ? { ...x, client: editForm.client, type: editForm.type, guests: Number(editForm.guests) || 0, amount: Number(editForm.amount), date: editForm.date, status: editForm.status }
+          : x
+      )
+    );
+    setEditOpen(false);
+  };
+
+  const downloadQuotation = (q: Quotation) => {
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Quotation ${q.id} — Twinkles Events Namibia</title>
+<style>
+body { font-family: Georgia, serif; max-width: 720px; margin: 40px auto; color: #1a1a1a; line-height: 1.6; }
+.header { text-align: center; border-bottom: 2px solid #c5a065; padding-bottom: 20px; margin-bottom: 40px; }
+.header h1 { font-style: italic; font-size: 28px; margin: 0; color: #2c2c2c; }
+.header p { margin: 6px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #888; }
+.row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+.row span:first-child { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.row span:last-child { font-weight: 600; }
+.total { margin-top: 30px; padding-top: 20px; border-top: 2px solid #c5a065; display: flex; justify-content: space-between; font-size: 18px; }
+.total span:last-child { font-weight: 700; font-style: italic; }
+.footer { margin-top: 60px; text-align: center; font-size: 11px; color: #999; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Twinkles Events Namibia</h1>
+  <p>Event Design &amp; Decor · Quotation</p>
+</div>
+<div class="row"><span>Quotation No</span><span>${q.id}</span></div>
+<div class="row"><span>Client</span><span>${q.client}</span></div>
+<div class="row"><span>Event Type</span><span>${q.type}</span></div>
+<div class="row"><span>Guests</span><span>${q.guests}</span></div>
+<div class="row"><span>Event Date</span><span>${q.date}</span></div>
+<div class="row"><span>Status</span><span>${q.status}</span></div>
+<div class="row"><span>Date Issued</span><span>${new Date().toLocaleDateString()}</span></div>
+<div class="total"><span>Total Estimate</span><span>N$${q.amount.toLocaleString()}</span></div>
+<div class="footer">
+  <p>Windhoek &amp; Swakopmund, Namibia · djpakkie@gmail.com</p>
+  <p>This quotation is valid for 14 days from date of issue.</p>
+</div>
+</body>
+</html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${q.id}_quotation.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const quoteStatusStyles: Record<string, string> = {
+    draft: "bg-brand-soft text-brand-primary/70",
+    sent: "bg-amber-50 text-amber-800",
+    accepted: "bg-green-50 text-green-700",
+    invoiced: "bg-brand-primary text-primary-foreground",
   };
 
   return (
@@ -350,7 +440,7 @@ function QuotationsView({
               <th className="pb-3 font-medium">Event</th>
               <th className="pb-3 font-medium">Amount</th>
               <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium text-right">Action</th>
+              <th className="pb-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -361,28 +451,132 @@ function QuotationsView({
                 <td className="py-3 text-brand-primary/70 text-xs">{q.type} · {q.date}</td>
                 <td className="py-3 font-serif">N${q.amount.toLocaleString()}</td>
                 <td className="py-3">
-                  <span className="px-2 py-1 text-[9px] uppercase tracking-widest font-bold bg-brand-soft text-brand-primary/70">
+                  <span className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold ${quoteStatusStyles[q.status] || "bg-brand-soft"}`}>
                     {q.status}
                   </span>
                   {q.invoiceId && <span className="ml-2 text-[10px] text-brand-primary/50">→ {q.invoiceId}</span>}
                 </td>
                 <td className="py-3 text-right">
-                  {q.invoiceId ? (
-                    <span className="text-[10px] uppercase tracking-widest text-brand-primary/40">Linked</span>
-                  ) : (
-                    <button
-                      onClick={() => convertToInvoice(q)}
-                      className="text-[10px] uppercase tracking-widest font-bold text-brand-accent hover:underline"
-                    >
-                      → Invoice
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => openView(q)} className="p-1.5 hover:bg-brand-bg rounded transition-colors" title="View">
+                      <Eye className="size-3.5 text-brand-primary/60" />
                     </button>
-                  )}
+                    <button onClick={() => openEdit(q)} className="p-1.5 hover:bg-brand-bg rounded transition-colors" title="Edit">
+                      <Pencil className="size-3.5 text-brand-primary/60" />
+                    </button>
+                    <button onClick={() => downloadQuotation(q)} className="p-1.5 hover:bg-brand-bg rounded transition-colors" title="Download">
+                      <Download className="size-3.5 text-brand-primary/60" />
+                    </button>
+                    {q.invoiceId ? (
+                      <span className="text-[10px] uppercase tracking-widest text-brand-primary/40 ml-1">Linked</span>
+                    ) : (
+                      <button
+                        onClick={() => convertToInvoice(q)}
+                        className="text-[10px] uppercase tracking-widest font-bold text-brand-accent hover:underline ml-1"
+                      >
+                        → Invoice
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* View Dialog */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif italic">Quotation {selected?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between border-b border-brand-primary/10 pb-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Client</span>
+              <span className="font-serif">{selected?.client}</span>
+            </div>
+            <div className="flex justify-between border-b border-brand-primary/10 pb-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Event Type</span>
+              <span>{selected?.type}</span>
+            </div>
+            <div className="flex justify-between border-b border-brand-primary/10 pb-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Guests</span>
+              <span>{selected?.guests}</span>
+            </div>
+            <div className="flex justify-between border-b border-brand-primary/10 pb-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Event Date</span>
+              <span>{selected?.date}</span>
+            </div>
+            <div className="flex justify-between border-b border-brand-primary/10 pb-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Status</span>
+              <span className={`px-2 py-0.5 text-[9px] uppercase tracking-widest font-bold ${selected ? quoteStatusStyles[selected.status] : ""}`}>{selected?.status}</span>
+            </div>
+            {selected?.invoiceId && (
+              <div className="flex justify-between border-b border-brand-primary/10 pb-2">
+                <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Linked Invoice</span>
+                <span className="font-serif text-brand-accent">{selected.invoiceId}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Amount</span>
+              <span className="font-serif text-lg italic">N${selected?.amount.toLocaleString()}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <button onClick={() => selected && downloadQuotation(selected)} className="px-4 py-2 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors">
+              Download
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif italic">Edit Quotation {selected?.id}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveEdit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Client name</span>
+                <input required value={editForm.client} onChange={(e) => setEditForm({ ...editForm, client: e.target.value })} className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent" />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Event type</span>
+                <input value={editForm.type} onChange={(e) => setEditForm({ ...editForm, type: e.target.value })} className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent" />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Guests</span>
+                <input type="number" value={editForm.guests} onChange={(e) => setEditForm({ ...editForm, guests: e.target.value })} className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent" />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Amount (N$)</span>
+                <input required type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent" />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Event date</span>
+                <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent" />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Status</span>
+                <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value as Quotation["status"] })} className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent">
+                  <option value="draft">draft</option>
+                  <option value="sent">sent</option>
+                  <option value="accepted">accepted</option>
+                  <option value="invoiced">invoiced</option>
+                </select>
+              </label>
+            </div>
+            <DialogFooter>
+              <button type="submit" className="px-6 py-3 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors">
+                Save changes
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
