@@ -215,6 +215,7 @@ function Admin() {
             />
           )}
           {active === "invoices" && <InvoicesView invoices={invoices} quotations={quotations} />}
+          {active === "statements" && <StatementsView invoices={invoices} />}
           {active === "calendar" && <CalendarView />}
           {active === "inventory" && <InventoryView items={inventoryList} setItems={setInventoryList} />}
           {active === "payments" && <PaymentsView invoices={invoices} />}
