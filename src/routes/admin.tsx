@@ -346,52 +346,7 @@ function QuotationsView({
     setEditOpen(false);
   };
 
-  const downloadQuotation = (q: Quotation) => {
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Quotation ${q.id} — Twinkles Events Namibia</title>
-<style>
-body { font-family: Georgia, serif; max-width: 720px; margin: 40px auto; color: #1a1a1a; line-height: 1.6; }
-.header { text-align: center; border-bottom: 2px solid #c5a065; padding-bottom: 20px; margin-bottom: 40px; }
-.header h1 { font-style: italic; font-size: 28px; margin: 0; color: #2c2c2c; }
-.header p { margin: 6px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #888; }
-.row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-.row span:first-child { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
-.row span:last-child { font-weight: 600; }
-.total { margin-top: 30px; padding-top: 20px; border-top: 2px solid #c5a065; display: flex; justify-content: space-between; font-size: 18px; }
-.total span:last-child { font-weight: 700; font-style: italic; }
-.footer { margin-top: 60px; text-align: center; font-size: 11px; color: #999; }
-</style>
-</head>
-<body>
-<div class="header">
-  <h1>Twinkles Events Namibia</h1>
-  <p>Event Design &amp; Decor · Quotation</p>
-</div>
-<div class="row"><span>Quotation No</span><span>${q.id}</span></div>
-<div class="row"><span>Client</span><span>${q.client}</span></div>
-<div class="row"><span>Event Type</span><span>${q.type}</span></div>
-<div class="row"><span>Guests</span><span>${q.guests}</span></div>
-<div class="row"><span>Event Date</span><span>${q.date}</span></div>
-<div class="row"><span>Status</span><span>${q.status}</span></div>
-<div class="row"><span>Date Issued</span><span>${new Date().toLocaleDateString()}</span></div>
-<div class="total"><span>Total Estimate</span><span>N$${q.amount.toLocaleString()}</span></div>
-<div class="footer">
-  <p>Windhoek &amp; Swakopmund, Namibia · djpakkie@gmail.com</p>
-  <p>This quotation is valid for 14 days from date of issue.</p>
-</div>
-</body>
-</html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${q.id}_quotation.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const downloadQuotation = (q: Quotation) => downloadQuotationPDF(q);
 
   const quoteStatusStyles: Record<string, string> = {
     draft: "bg-brand-soft text-brand-primary/70",
