@@ -20,6 +20,7 @@ import {
   adminUser,
 } from "@/lib/mockData";
 import { Eye, Pencil, Download } from "lucide-react";
+import { downloadQuotationPDF, downloadInvoicePDF, downloadStatementPDF } from "@/lib/pdf";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
