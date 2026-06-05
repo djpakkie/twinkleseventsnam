@@ -2,6 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   leads as seedLeads,
   inventory as seedInventory,
   payments as seedPayments,
@@ -12,6 +19,7 @@ import {
   vendors as seedVendors,
   adminUser,
 } from "@/lib/mockData";
+import { Eye, Pencil, Download } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
