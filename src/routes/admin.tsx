@@ -553,7 +553,8 @@ function InvoicesView({ invoices, quotations }: { invoices: Invoice[]; quotation
             <th className="pb-3 font-medium">Linked quote</th>
             <th className="pb-3 font-medium">Date</th>
             <th className="pb-3 font-medium">Amount</th>
-            <th className="pb-3 font-medium text-right">Status</th>
+            <th className="pb-3 font-medium">Status</th>
+            <th className="pb-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -568,7 +569,7 @@ function InvoicesView({ invoices, quotations }: { invoices: Invoice[]; quotation
                 </td>
                 <td className="py-3 text-brand-primary/60 text-xs">{p.date}</td>
                 <td className="py-3 font-serif">N${p.amount.toLocaleString()}</td>
-                <td className="py-3 text-right">
+                <td className="py-3">
                   <span
                     className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold ${
                       p.status === "paid"
@@ -581,11 +582,131 @@ function InvoicesView({ invoices, quotations }: { invoices: Invoice[]; quotation
                     {p.status}
                   </span>
                 </td>
+                <td className="py-3 text-right">
+                  <button
+                    onClick={() => downloadInvoicePDF(p)}
+                    className="p-1.5 hover:bg-brand-bg rounded transition-colors inline-flex"
+                    title="Download invoice PDF"
+                  >
+                    <Download className="size-3.5 text-brand-primary/60" />
+                  </button>
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function StatementsView({ invoices }: { invoices: Invoice[] }) {
+  const clients = Array.from(new Set(invoices.map((i) => i.client))).sort();
+  const [client, setClient] = useState(clients[0] ?? "");
+  const [period, setPeriod] = useState(`${new Date().getFullYear()} — YTD`);
+
+  const clientInvoices = invoices.filter((i) => i.client === client);
+  const total = clientInvoices.reduce((s, i) => s + i.amount, 0);
+  const paid = clientInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+  const outstanding = total - paid;
+
+  const generate = () => {
+    if (!client) return;
+    downloadStatementPDF({
+      client,
+      period,
+      lines: clientInvoices.map((i) => ({
+        id: i.id,
+        date: i.date,
+        description: `Invoice ${i.quoteId ? `(quote ${i.quoteId})` : ""}`.trim(),
+        amount: i.amount,
+        status: i.status,
+      })),
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+        <h3 className="text-lg font-serif italic mb-6">Generate statement</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Client</span>
+            <select
+              value={client}
+              onChange={(e) => setClient(e.target.value)}
+              className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent"
+            >
+              {clients.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Period</span>
+            <input
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent"
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              onClick={generate}
+              disabled={!client}
+              className="w-full px-6 py-2.5 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors disabled:opacity-50"
+            >
+              ↓ Download statement
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+        <div className="flex items-end justify-between mb-6">
+          <h3 className="text-lg font-serif italic">{client || "—"} · Preview</h3>
+          <div className="flex gap-6 text-xs">
+            <div><p className="text-[10px] uppercase tracking-widest text-brand-primary/40">Invoiced</p><p className="font-serif text-lg">N${total.toLocaleString()}</p></div>
+            <div><p className="text-[10px] uppercase tracking-widest text-brand-primary/40">Paid</p><p className="font-serif text-lg text-green-700">N${paid.toLocaleString()}</p></div>
+            <div><p className="text-[10px] uppercase tracking-widest text-brand-primary/40">Outstanding</p><p className="font-serif text-lg text-brand-accent">N${outstanding.toLocaleString()}</p></div>
+          </div>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-[10px] uppercase tracking-widest text-brand-primary/40 text-left">
+              <th className="pb-3 font-medium">Ref</th>
+              <th className="pb-3 font-medium">Date</th>
+              <th className="pb-3 font-medium">Amount</th>
+              <th className="pb-3 font-medium text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clientInvoices.map((i) => (
+              <tr key={i.id} className="border-t border-brand-primary/5">
+                <td className="py-3 font-serif">{i.id}</td>
+                <td className="py-3 text-brand-primary/60 text-xs">{i.date}</td>
+                <td className="py-3 font-serif">N${i.amount.toLocaleString()}</td>
+                <td className="py-3 text-right">
+                  <span
+                    className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold ${
+                      i.status === "paid"
+                        ? "bg-green-50 text-green-700"
+                        : i.status === "due"
+                        ? "bg-amber-50 text-amber-800"
+                        : "bg-brand-soft"
+                    }`}
+                  >
+                    {i.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {clientInvoices.length === 0 && (
+              <tr><td colSpan={4} className="py-6 text-center text-brand-primary/40 text-xs">No invoices for this client.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
