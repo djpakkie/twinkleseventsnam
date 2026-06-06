@@ -14,16 +14,188 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          addons: Json | null
+          budget_range: string | null
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          estimated_total: number
+          event_date: string
+          guest_count: number
+          id: string
+          service_id: string | null
+          special_requirements: string | null
+          status: Database["public"]["Enums"]["booking_status"]
+          updated_at: string
+          user_id: string | null
+          venue: string | null
+        }
+        Insert: {
+          addons?: Json | null
+          budget_range?: string | null
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          estimated_total?: number
+          event_date: string
+          guest_count?: number
+          id?: string
+          service_id?: string | null
+          special_requirements?: string | null
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+          user_id?: string | null
+          venue?: string | null
+        }
+        Update: {
+          addons?: Json | null
+          budget_range?: string | null
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          estimated_total?: number
+          event_date?: string
+          guest_count?: number
+          id?: string
+          service_id?: string | null
+          special_requirements?: string | null
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+          user_id?: string | null
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          active: boolean
+          base_price: number
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          max_guests: number | null
+          min_guests: number | null
+          name: string
+          per_guest_price: number
+          slug: string
+          sort_order: number
+          tagline: string | null
+        }
+        Insert: {
+          active?: boolean
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          max_guests?: number | null
+          min_guests?: number | null
+          name: string
+          per_guest_price?: number
+          slug: string
+          sort_order?: number
+          tagline?: string | null
+        }
+        Update: {
+          active?: boolean
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          max_guests?: number | null
+          min_guests?: number | null
+          name?: string
+          per_guest_price?: number
+          slug?: string
+          sort_order?: number
+          tagline?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "customer"
+      booking_status:
+        | "pending"
+        | "quoted"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +322,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "customer"],
+      booking_status: [
+        "pending",
+        "quoted",
+        "confirmed",
+        "completed",
+        "cancelled",
+      ],
+    },
   },
 } as const
