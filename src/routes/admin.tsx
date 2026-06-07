@@ -681,19 +681,37 @@ function StatementsView({ invoices }: { invoices: Invoice[] }) {
   const paid = clientInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
   const outstanding = total - paid;
 
+  const statementOpts = () => ({
+    client,
+    period,
+    lines: clientInvoices.map((i) => ({
+      id: i.id,
+      date: i.date,
+      description: `Invoice ${i.quoteId ? `(quote ${i.quoteId})` : ""}`.trim(),
+      amount: i.amount,
+      status: i.status,
+    })),
+  });
+
   const generate = () => {
     if (!client) return;
-    downloadStatementPDF({
-      client,
-      period,
-      lines: clientInvoices.map((i) => ({
-        id: i.id,
-        date: i.date,
-        description: `Invoice ${i.quoteId ? `(quote ${i.quoteId})` : ""}`.trim(),
-        amount: i.amount,
-        status: i.status,
-      })),
-    });
+    downloadStatementPDF(statementOpts());
+  };
+
+  const view = () => {
+    if (!client) return;
+    viewStatementPDF(statementOpts());
+  };
+
+  const email = () => {
+    if (!client) return;
+    downloadStatementPDF(statementOpts());
+    const to = window.prompt(`Email statement to ${client}:`, "") ?? "";
+    const subject = encodeURIComponent(`Statement of Account — ${client}`);
+    const body = encodeURIComponent(
+      `Dear ${client},\n\nPlease find attached your statement of account for ${period}.\nOutstanding balance: N$${outstanding.toLocaleString()}.\n\n(The PDF has been downloaded — please attach it before sending.)\n\nKind regards,\nTwinkles Events Namibia`,
+    );
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -721,17 +739,35 @@ function StatementsView({ invoices }: { invoices: Invoice[] }) {
               className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent"
             />
           </label>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
+            <button
+              onClick={view}
+              disabled={!client}
+              className="flex-1 px-3 py-2.5 border border-brand-primary/20 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-bg transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1"
+              title="View PDF"
+            >
+              <Eye className="size-3.5" /> View
+            </button>
             <button
               onClick={generate}
               disabled={!client}
-              className="w-full px-6 py-2.5 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors disabled:opacity-50"
+              className="flex-1 px-3 py-2.5 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1"
+              title="Download PDF"
             >
-              ↓ Download statement
+              <Download className="size-3.5" /> Download
+            </button>
+            <button
+              onClick={email}
+              disabled={!client}
+              className="flex-1 px-3 py-2.5 border border-brand-primary/20 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-bg transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1"
+              title="Email statement"
+            >
+              <Mail className="size-3.5" /> Email
             </button>
           </div>
         </div>
       </div>
+
 
       <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
         <div className="flex items-end justify-between mb-6">
