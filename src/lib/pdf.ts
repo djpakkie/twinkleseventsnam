@@ -105,7 +105,7 @@ export type InvoicePDF = {
   quoteId?: string;
 };
 
-export function downloadInvoicePDF(inv: InvoicePDF) {
+function buildInvoiceDoc(inv: InvoicePDF) {
   const doc = new jsPDF();
   header(doc, "Invoice", inv.id);
   let y = infoRows(doc, 58, [
@@ -127,7 +127,16 @@ export function downloadInvoicePDF(inv: InvoicePDF) {
   y = (doc as any).lastAutoTable.finalY;
   totalLine(doc, y + 4, "Total Due", `N$${inv.amount.toLocaleString()}`);
   footer(doc, "Payable within 14 days. Bank details on request.");
-  doc.save(`${inv.id}_invoice.pdf`);
+  return doc;
+}
+
+export function downloadInvoicePDF(inv: InvoicePDF) {
+  buildInvoiceDoc(inv).save(`${inv.id}_invoice.pdf`);
+}
+
+export function viewInvoicePDF(inv: InvoicePDF) {
+  const url = buildInvoiceDoc(inv).output("bloburl");
+  window.open(url, "_blank");
 }
 
 export type StatementLine = {
@@ -138,11 +147,9 @@ export type StatementLine = {
   status: string;
 };
 
-export function downloadStatementPDF(opts: {
-  client: string;
-  period: string;
-  lines: StatementLine[];
-}) {
+type StatementOpts = { client: string; period: string; lines: StatementLine[] };
+
+function buildStatementDoc(opts: StatementOpts) {
   const doc = new jsPDF();
   const stmtNo = `STMT-${Date.now().toString().slice(-6)}`;
   header(doc, "Statement of Account", stmtNo);
@@ -176,5 +183,15 @@ export function downloadStatementPDF(opts: {
   doc.setTextColor(120);
   doc.text(`Invoiced: N$${total.toLocaleString()}   ·   Paid: N$${paid.toLocaleString()}`, 20, y + 24);
   footer(doc, "Please settle outstanding balances at your earliest convenience.");
+  return { doc, stmtNo };
+}
+
+export function downloadStatementPDF(opts: StatementOpts) {
+  const { doc, stmtNo } = buildStatementDoc(opts);
   doc.save(`${stmtNo}_${opts.client.replace(/\s+/g, "_")}.pdf`);
+}
+
+export function viewStatementPDF(opts: StatementOpts) {
+  const { doc } = buildStatementDoc(opts);
+  window.open(doc.output("bloburl"), "_blank");
 }

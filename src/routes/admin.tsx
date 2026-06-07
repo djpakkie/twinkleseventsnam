@@ -19,8 +19,14 @@ import {
   vendors as seedVendors,
   adminUser,
 } from "@/lib/mockData";
-import { Eye, Pencil, Download } from "lucide-react";
-import { downloadQuotationPDF, downloadInvoicePDF, downloadStatementPDF } from "@/lib/pdf";
+import { Eye, Pencil, Download, Mail, FileText } from "lucide-react";
+import {
+  downloadQuotationPDF,
+  downloadInvoicePDF,
+  viewInvoicePDF,
+  downloadStatementPDF,
+  viewStatementPDF,
+} from "@/lib/pdf";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -542,6 +548,39 @@ function QuotationsView({
 
 function InvoicesView({ invoices, quotations }: { invoices: Invoice[]; quotations: Quotation[] }) {
   const quoteFor = (id?: string) => quotations.find((q) => q.id === id);
+
+  const clientOutstanding = (client: string) => {
+    const inv = invoices.filter((i) => i.client === client);
+    const total = inv.reduce((s, i) => s + i.amount, 0);
+    const paid = inv.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+    return total - paid;
+  };
+
+  const downloadClientStatement = (client: string) => {
+    const inv = invoices.filter((i) => i.client === client);
+    downloadStatementPDF({
+      client,
+      period: `${new Date().getFullYear()} — YTD`,
+      lines: inv.map((i) => ({
+        id: i.id,
+        date: i.date,
+        description: `Invoice ${i.quoteId ? `(quote ${i.quoteId})` : ""}`.trim(),
+        amount: i.amount,
+        status: i.status,
+      })),
+    });
+  };
+
+  const emailInvoice = (p: Invoice) => {
+    downloadInvoicePDF(p);
+    const to = window.prompt(`Email invoice ${p.id} to:`, "") ?? "";
+    const subject = encodeURIComponent(`Invoice ${p.id} — Twinkles Events Namibia`);
+    const body = encodeURIComponent(
+      `Dear ${p.client},\n\nPlease find attached invoice ${p.id} dated ${p.date} for N$${p.amount.toLocaleString()}.\n\n(The PDF has been downloaded to your device — please attach it before sending.)\n\nKind regards,\nTwinkles Events Namibia`,
+    );
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+  };
+
   return (
     <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
       <h3 className="text-lg font-serif italic mb-6">Invoices</h3>
@@ -554,12 +593,14 @@ function InvoicesView({ invoices, quotations }: { invoices: Invoice[]; quotation
             <th className="pb-3 font-medium">Date</th>
             <th className="pb-3 font-medium">Amount</th>
             <th className="pb-3 font-medium">Status</th>
+            <th className="pb-3 font-medium">Statement</th>
             <th className="pb-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
           {invoices.map((p) => {
             const q = quoteFor(p.quoteId);
+            const outstanding = clientOutstanding(p.client);
             return (
               <tr key={p.id} className="border-t border-brand-primary/5">
                 <td className="py-3 font-serif">{p.id}</td>
@@ -582,14 +623,44 @@ function InvoicesView({ invoices, quotations }: { invoices: Invoice[]; quotation
                     {p.status}
                   </span>
                 </td>
+                <td className="py-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-serif text-xs ${outstanding > 0 ? "text-brand-accent" : "text-green-700"}`}>
+                      N${outstanding.toLocaleString()}
+                    </span>
+                    <button
+                      onClick={() => downloadClientStatement(p.client)}
+                      className="p-1 hover:bg-brand-bg rounded transition-colors"
+                      title="Download client statement"
+                    >
+                      <FileText className="size-3.5 text-brand-primary/60" />
+                    </button>
+                  </div>
+                </td>
                 <td className="py-3 text-right">
-                  <button
-                    onClick={() => downloadInvoicePDF(p)}
-                    className="p-1.5 hover:bg-brand-bg rounded transition-colors inline-flex"
-                    title="Download invoice PDF"
-                  >
-                    <Download className="size-3.5 text-brand-primary/60" />
-                  </button>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => viewInvoicePDF(p)}
+                      className="p-1.5 hover:bg-brand-bg rounded transition-colors"
+                      title="View invoice PDF"
+                    >
+                      <Eye className="size-3.5 text-brand-primary/60" />
+                    </button>
+                    <button
+                      onClick={() => downloadInvoicePDF(p)}
+                      className="p-1.5 hover:bg-brand-bg rounded transition-colors"
+                      title="Download invoice PDF"
+                    >
+                      <Download className="size-3.5 text-brand-primary/60" />
+                    </button>
+                    <button
+                      onClick={() => emailInvoice(p)}
+                      className="p-1.5 hover:bg-brand-bg rounded transition-colors"
+                      title="Email invoice"
+                    >
+                      <Mail className="size-3.5 text-brand-primary/60" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             );
@@ -610,19 +681,37 @@ function StatementsView({ invoices }: { invoices: Invoice[] }) {
   const paid = clientInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
   const outstanding = total - paid;
 
+  const statementOpts = () => ({
+    client,
+    period,
+    lines: clientInvoices.map((i) => ({
+      id: i.id,
+      date: i.date,
+      description: `Invoice ${i.quoteId ? `(quote ${i.quoteId})` : ""}`.trim(),
+      amount: i.amount,
+      status: i.status,
+    })),
+  });
+
   const generate = () => {
     if (!client) return;
-    downloadStatementPDF({
-      client,
-      period,
-      lines: clientInvoices.map((i) => ({
-        id: i.id,
-        date: i.date,
-        description: `Invoice ${i.quoteId ? `(quote ${i.quoteId})` : ""}`.trim(),
-        amount: i.amount,
-        status: i.status,
-      })),
-    });
+    downloadStatementPDF(statementOpts());
+  };
+
+  const view = () => {
+    if (!client) return;
+    viewStatementPDF(statementOpts());
+  };
+
+  const email = () => {
+    if (!client) return;
+    downloadStatementPDF(statementOpts());
+    const to = window.prompt(`Email statement to ${client}:`, "") ?? "";
+    const subject = encodeURIComponent(`Statement of Account — ${client}`);
+    const body = encodeURIComponent(
+      `Dear ${client},\n\nPlease find attached your statement of account for ${period}.\nOutstanding balance: N$${outstanding.toLocaleString()}.\n\n(The PDF has been downloaded — please attach it before sending.)\n\nKind regards,\nTwinkles Events Namibia`,
+    );
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -650,17 +739,35 @@ function StatementsView({ invoices }: { invoices: Invoice[] }) {
               className="mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent"
             />
           </label>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
+            <button
+              onClick={view}
+              disabled={!client}
+              className="flex-1 px-3 py-2.5 border border-brand-primary/20 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-bg transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1"
+              title="View PDF"
+            >
+              <Eye className="size-3.5" /> View
+            </button>
             <button
               onClick={generate}
               disabled={!client}
-              className="w-full px-6 py-2.5 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors disabled:opacity-50"
+              className="flex-1 px-3 py-2.5 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1"
+              title="Download PDF"
             >
-              ↓ Download statement
+              <Download className="size-3.5" /> Download
+            </button>
+            <button
+              onClick={email}
+              disabled={!client}
+              className="flex-1 px-3 py-2.5 border border-brand-primary/20 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-bg transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1"
+              title="Email statement"
+            >
+              <Mail className="size-3.5" /> Email
             </button>
           </div>
         </div>
       </div>
+
 
       <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
         <div className="flex items-end justify-between mb-6">
