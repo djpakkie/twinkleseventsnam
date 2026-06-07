@@ -19,8 +19,14 @@ import {
   vendors as seedVendors,
   adminUser,
 } from "@/lib/mockData";
-import { Eye, Pencil, Download } from "lucide-react";
-import { downloadQuotationPDF, downloadInvoicePDF, downloadStatementPDF } from "@/lib/pdf";
+import { Eye, Pencil, Download, Mail, FileText } from "lucide-react";
+import {
+  downloadQuotationPDF,
+  downloadInvoicePDF,
+  viewInvoicePDF,
+  downloadStatementPDF,
+  viewStatementPDF,
+} from "@/lib/pdf";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
