@@ -825,39 +825,152 @@ function StatementsView({ invoices }: { invoices: Invoice[] }) {
 }
 
 function CalendarView() {
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [cursor, setCursor] = useState(new Date());
+  const [selected, setSelected] = useState<any | null>(null);
+
+  const fetchBookings = async () => {
+    const { data } = await supabase
+      .from("bookings")
+      .select("*, services(name)")
+      .order("event_date", { ascending: true });
+    setBookings(data ?? []);
+  };
+
+  useEffect(() => {
+    fetchBookings();
+    const channel = supabase
+      .channel("admin-bookings-calendar")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings" },
+        () => fetchBookings(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const first = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // Mon-first offset
+  const startOffset = (first.getDay() + 6) % 7;
+  const monthLabel = cursor.toLocaleString("default", { month: "long", year: "numeric" });
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "confirmed": return "bg-green-500 text-white";
+      case "completed": return "bg-blue-500 text-white";
+      case "cancelled": return "bg-red-500 text-white";
+      default: return "bg-amber-400 text-black"; // pending / quoted
+    }
+  };
+
+  const eventsOnDay = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return bookings.filter((b) => {
+      const start = b.event_date;
+      const end = b.event_end_date ?? b.event_date;
+      return dateStr >= start && dateStr <= end;
+    });
+  };
+
   return (
     <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-serif italic">September 2026</h3>
+        <h3 className="text-lg font-serif italic">{monthLabel}</h3>
         <div className="flex gap-2">
-          <button className="px-3 py-1 text-xs border border-brand-primary/10">‹</button>
-          <button className="px-3 py-1 text-xs border border-brand-primary/10">›</button>
+          <button onClick={() => setCursor(new Date(year, month - 1, 1))} className="px-3 py-1 text-xs border border-brand-primary/10">‹</button>
+          <button onClick={() => setCursor(new Date())} className="px-3 py-1 text-xs border border-brand-primary/10">Today</button>
+          <button onClick={() => setCursor(new Date(year, month + 1, 1))} className="px-3 py-1 text-xs border border-brand-primary/10">›</button>
         </div>
       </div>
+
+      <div className="flex gap-4 mb-4 text-[10px] uppercase tracking-widest text-brand-primary/60 flex-wrap">
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" />Pending</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500" />Confirmed</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" />Completed</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />Cancelled</span>
+      </div>
+
       <div className="grid grid-cols-7 gap-px bg-brand-primary/5">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div key={d} className="bg-card p-2 text-[10px] uppercase tracking-widest text-brand-primary/40 text-center">
             {d}
           </div>
         ))}
-        {Array.from({ length: 30 }, (_, i) => {
+        {Array.from({ length: startOffset }).map((_, i) => (
+          <div key={`pad-${i}`} className="bg-card aspect-square" />
+        ))}
+        {Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
-          const evt = seedLeads.find((l) => l.date === `2026-09-${String(day).padStart(2, "0")}`);
+          const events = eventsOnDay(day);
           return (
-            <div key={day} className="bg-card aspect-square p-2 text-xs relative">
+            <div key={day} className="bg-card aspect-square p-1.5 text-xs relative overflow-hidden">
               <span className="text-brand-primary/40">{day}</span>
-              {evt && (
-                <div className="absolute bottom-1 left-1 right-1 bg-brand-accent text-accent-foreground text-[9px] px-1 py-0.5 truncate">
-                  {evt.client.split(" ")[0]}
-                </div>
-              )}
+              <div className="mt-1 space-y-0.5">
+                {events.slice(0, 3).map((ev) => {
+                  const type = ev.event_type || ev.services?.name || "Event";
+                  return (
+                    <button
+                      key={ev.id}
+                      onClick={() => setSelected(ev)}
+                      className={`w-full text-left text-[9px] px-1 py-0.5 truncate rounded ${statusColor(ev.status)}`}
+                      title={`${ev.client_name} - ${type}`}
+                    >
+                      {ev.client_name.split(" ")[0]} · {type}
+                    </button>
+                  );
+                })}
+                {events.length > 3 && (
+                  <span className="text-[9px] text-brand-primary/50">+{events.length - 3}</span>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
+
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif italic">
+              {selected?.client_name} — {selected?.event_type || selected?.services?.name || "Event"}
+            </DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-3 text-sm">
+              <Row label="Client" value={selected.client_name} />
+              <Row label="Phone" value={selected.client_phone || "—"} />
+              <Row label="Event type" value={selected.event_type || selected.services?.name || "—"} />
+              <Row label="Venue" value={selected.venue || "—"} />
+              <Row label="Guests" value={String(selected.guest_count ?? 0)} />
+              <Row label="Date" value={selected.event_date + (selected.event_end_date ? ` → ${selected.event_end_date}` : "")} />
+              <Row label="Status" value={<span className={`inline-block px-2 py-0.5 rounded text-[10px] uppercase ${statusColor(selected.status)}`}>{selected.status}</span>} />
+              <div>
+                <span className="block text-[10px] uppercase tracking-widest text-brand-primary/50 mb-1">Notes</span>
+                <p className="text-sm whitespace-pre-wrap">{selected.notes || selected.special_requirements || "—"}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">{label}</span>
+      <span className="text-sm text-right">{value}</span>
+    </div>
+  );
+}
+
 
 function InventoryView({
   items,
