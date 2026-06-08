@@ -57,8 +57,11 @@ export type Database = {
           created_at: string
           estimated_total: number
           event_date: string
+          event_end_date: string | null
+          event_type: string | null
           guest_count: number
           id: string
+          notes: string | null
           service_id: string | null
           special_requirements: string | null
           status: Database["public"]["Enums"]["booking_status"]
@@ -75,8 +78,11 @@ export type Database = {
           created_at?: string
           estimated_total?: number
           event_date: string
+          event_end_date?: string | null
+          event_type?: string | null
           guest_count?: number
           id?: string
+          notes?: string | null
           service_id?: string | null
           special_requirements?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
@@ -93,8 +99,11 @@ export type Database = {
           created_at?: string
           estimated_total?: number
           event_date?: string
+          event_end_date?: string | null
+          event_type?: string | null
           guest_count?: number
           id?: string
+          notes?: string | null
           service_id?: string | null
           special_requirements?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
