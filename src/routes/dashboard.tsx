@@ -23,7 +23,7 @@ import {
   ArrowRightCircle,
 } from "lucide-react";
 
-export const Route = createFileRoute("/admin/dashboard")({
+export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — Twinkles Events Namibia" },
