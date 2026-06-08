@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           addons: Json | null
@@ -79,6 +112,101 @@ export type Database = {
           },
         ]
       }
+      inventory: {
+        Row: {
+          category: string | null
+          created_at: string
+          current_quantity: number
+          id: string
+          minimum_quantity: number
+          name: string
+          notes: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          minimum_quantity?: number
+          name: string
+          notes?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          minimum_quantity?: number
+          name?: string
+          notes?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number
+          amount_paid: number
+          booking_id: string | null
+          client_email: string
+          client_name: string
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issued_at: string
+          notes: string | null
+          paid_at: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          amount_paid?: number
+          booking_id?: string | null
+          client_email: string
+          client_name: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issued_at?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number
+          booking_id?: string | null
+          client_email?: string
+          client_name?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -105,6 +233,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quotations: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          client_email: string
+          client_name: string
+          created_at: string
+          id: string
+          notes: string | null
+          quote_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["quotation_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          booking_id?: string | null
+          client_email: string
+          client_name: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quote_number: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["quotation_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          client_email?: string
+          client_name?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quote_number?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["quotation_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       services: {
         Row: {
@@ -196,6 +374,20 @@ export type Database = {
         | "confirmed"
         | "completed"
         | "cancelled"
+      invoice_status:
+        | "draft"
+        | "unpaid"
+        | "partial"
+        | "paid"
+        | "overdue"
+        | "cancelled"
+      quotation_status:
+        | "pending"
+        | "sent"
+        | "approved"
+        | "rejected"
+        | "converted"
+        | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -330,6 +522,22 @@ export const Constants = {
         "confirmed",
         "completed",
         "cancelled",
+      ],
+      invoice_status: [
+        "draft",
+        "unpaid",
+        "partial",
+        "paid",
+        "overdue",
+        "cancelled",
+      ],
+      quotation_status: [
+        "pending",
+        "sent",
+        "approved",
+        "rejected",
+        "converted",
+        "expired",
       ],
     },
   },
