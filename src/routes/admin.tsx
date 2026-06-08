@@ -203,8 +203,14 @@ function Admin() {
                 {sections.find((s) => s.id === active)?.label}
               </h1>
             </div>
-            <span className="text-xs text-brand-primary/40">Last updated · 14:02</span>
+            <div className="flex items-center gap-4">
+              <a href="/dashboard" className="text-xs uppercase tracking-widest border border-brand-primary/20 px-3 py-2 hover:bg-brand-bg">
+                Live dashboard →
+              </a>
+              <span className="text-xs text-brand-primary/40">Last updated · 14:02</span>
+            </div>
           </div>
+
 
           {active === "overview" && (
             <OverviewView
