@@ -52,6 +52,7 @@ function Quote() {
   });
 
   const [submitted, setSubmitted] = useState<{ id: string; total: number } | null>(null);
+  const [eventType, setEventType] = useState<EventType | null>(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
     serviceSlug: pkg || "",
