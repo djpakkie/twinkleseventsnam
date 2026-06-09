@@ -570,3 +570,97 @@ function Legend({ color, label }: { color: string; label: string }) {
     </div>
   );
 }
+
+type BreakdownStat = { key: string; color: string; count: number; revenue: number; percent: number; totalCount: number };
+
+function EventBreakdownSection({ stats }: { stats: BreakdownStat[] }) {
+  const totalCount = stats[0]?.totalCount ?? 0;
+  const totalRevenue = stats.reduce((s, x) => s + x.revenue, 0);
+  const pieData = stats.filter((s) => s.count > 0);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-xl font-serif tracking-tight flex items-center gap-2">
+            <PieIcon className="w-4 h-4" /> Event breakdown
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {totalCount} booking{totalCount === 1 ? "" : "s"} this month · {currency(totalRevenue)} paid revenue
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {stats.map((s) => (
+          <Card key={s.key}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.key}</p>
+              </div>
+              <p className="text-2xl font-semibold leading-none">{s.count}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.percent}% of bookings</p>
+              <p className="text-sm font-medium mt-2">{currency(s.revenue)}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Bookings by event type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pieData.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-12 text-center">No bookings this month yet.</p>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} dataKey="count" nameKey="key" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                      {pieData.map((s) => (
+                        <Cell key={s.key} fill={s.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number, _name, item) => {
+                        const s = item?.payload as BreakdownStat | undefined;
+                        return [`${value} (${s?.percent ?? 0}%)`, s?.key ?? ""];
+                      }}
+                    />
+                    <RechartsLegend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue by event type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats} margin={{ top: 8, right: 8, left: 0, bottom: 32 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="key" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                  <YAxis tickFormatter={(v) => `N$${Math.round(v / 1000)}k`} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => currency(Number(v))} />
+                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                    {stats.map((s) => (
+                      <Cell key={s.key} fill={s.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
