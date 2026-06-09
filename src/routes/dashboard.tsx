@@ -272,6 +272,10 @@ function DashboardPage() {
           <Kpi icon={CheckCircle2} label="Confirmed this month" value={confirmedThisMonth.length} />
         </section>
 
+        <EventBreakdownSection stats={eventBreakdown} />
+
+
+
         <section className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
