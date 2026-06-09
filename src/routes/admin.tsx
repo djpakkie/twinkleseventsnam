@@ -233,6 +233,7 @@ function Admin() {
           {active === "statements" && <StatementsView invoices={invoices} />}
           {active === "calendar" && <CalendarView />}
           {active === "inventory" && <InventoryView items={inventoryList} setItems={setInventoryList} />}
+          {active === "event-types" && <EventTypesView />}
           {active === "payments" && <PaymentsView invoices={invoices} />}
           {active === "staff" && <StaffView />}
           {active === "vendors" && <VendorsView vendors={vendorList} setVendors={setVendorList} />}
