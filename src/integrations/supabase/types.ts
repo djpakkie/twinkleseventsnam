@@ -59,6 +59,7 @@ export type Database = {
           event_date: string
           event_end_date: string | null
           event_type: string | null
+          event_type_id: string | null
           guest_count: number
           id: string
           notes: string | null
@@ -80,6 +81,7 @@ export type Database = {
           event_date: string
           event_end_date?: string | null
           event_type?: string | null
+          event_type_id?: string | null
           guest_count?: number
           id?: string
           notes?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           event_date?: string
           event_end_date?: string | null
           event_type?: string | null
+          event_type_id?: string | null
           guest_count?: number
           id?: string
           notes?: string | null
@@ -113,8 +116,59 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bookings_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "event_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_service_id_fkey"
             columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_types: {
+        Row: {
+          archived: boolean
+          created_at: string
+          default_service_id: string | null
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          default_service_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          default_service_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_types_default_service_id_fkey"
+            columns: ["default_service_id"]
             isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]

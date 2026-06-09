@@ -5,6 +5,7 @@ import { SiteNav, SiteFooter } from "@/components/SiteNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { EventTypeSelect, type EventType } from "@/components/EventTypeSelect";
 
 export const Route = createFileRoute("/quote")({
   validateSearch: (s: Record<string, unknown>) => ({ pkg: (s.pkg as string) || "" }),
@@ -51,6 +52,7 @@ function Quote() {
   });
 
   const [submitted, setSubmitted] = useState<{ id: string; total: number } | null>(null);
+  const [eventType, setEventType] = useState<EventType | null>(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
     serviceSlug: pkg || "",
@@ -77,13 +79,15 @@ function Quote() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.email || !selectedService || !form.date) {
-      toast.error("Please complete name, email, service, and date.");
+    if (!form.name || !form.email || !selectedService || !form.date || !eventType) {
+      toast.error("Please complete name, email, event type, service, and date.");
       return;
     }
     const { data, error } = await supabase.from("bookings").insert({
       user_id: user?.id ?? null,
       service_id: selectedService.id,
+      event_type_id: eventType.id,
+      event_type: eventType.name,
       client_name: form.name,
       client_email: form.email,
       client_phone: form.phone || null,
@@ -99,6 +103,14 @@ function Quote() {
     if (error) { toast.error(error.message); return; }
     toast.success("Booking received! We'll be in touch within 48 hours.");
     setSubmitted({ id: data.id, total: estimate });
+  }
+
+  function handleEventTypeChange(t: EventType | null) {
+    setEventType(t);
+    if (t?.default_service_id && services && !form.serviceSlug) {
+      const svc = services.find((s) => s.id === t.default_service_id);
+      if (svc) setForm((f) => ({ ...f, serviceSlug: svc.slug }));
+    }
   }
 
   if (submitted) {
@@ -156,9 +168,20 @@ function Quote() {
                 <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="qinput" />
               </Field>
               <Field label="Event type" required>
+                <EventTypeSelect value={eventType?.id ?? null} onChange={handleEventTypeChange} required />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Service / package" required>
                 <select value={form.serviceSlug} onChange={(e) => setForm({ ...form, serviceSlug: e.target.value })} className="qinput">
-                  <option value="">Select a service…</option>
+                  <option value="">Select a package…</option>
                   {services?.map((s) => <option key={s.id} value={s.slug}>{s.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Budget range">
+                <select value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className="qinput">
+                  <option value="">Select a range…</option>
+                  {BUDGET_RANGES.map((b) => <option key={b} value={b}>{b}</option>)}
                 </select>
               </Field>
             </Row>
@@ -172,12 +195,6 @@ function Quote() {
             </Row>
             <Field label="Venue / location">
               <input value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} className="qinput" placeholder="e.g. Swakopmund, private estate" />
-            </Field>
-            <Field label="Budget range">
-              <select value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className="qinput">
-                <option value="">Select a range…</option>
-                {BUDGET_RANGES.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
             </Field>
             <Field label="Add-ons (optional)">
               <div className="grid sm:grid-cols-2 gap-2 mt-1">
