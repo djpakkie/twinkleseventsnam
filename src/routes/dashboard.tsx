@@ -180,6 +180,45 @@ function DashboardPage() {
     .filter((i) => i.paid_at && new Date(i.paid_at) >= monthStart && new Date(i.paid_at) <= monthEnd)
     .reduce((sum, i) => sum + Number(i.amount_paid || 0), 0);
 
+  // Event Breakdown — bookings this month, by category, with attached paid revenue this month
+  const eventBreakdown = useMemo(() => {
+    const monthBookings = (bookings.data ?? []).filter((b) => {
+      const d = new Date(b.event_date);
+      return d >= monthStart && d <= monthEnd && b.status !== "cancelled";
+    });
+    const totalCount = monthBookings.length;
+
+    const bookingCategory = new Map<string, string>();
+    for (const b of monthBookings) bookingCategory.set(b.id, categorize(b.event_type));
+
+    const paidThisMonth = (invoices.data ?? []).filter(
+      (i) => i.paid_at && new Date(i.paid_at) >= monthStart && new Date(i.paid_at) <= monthEnd,
+    );
+
+    const stats = EVENT_CATEGORIES.map((c) => ({
+      key: c.key,
+      color: c.color,
+      count: 0,
+      revenue: 0,
+    }));
+    const idx = (k: string) => stats.findIndex((s) => s.key === k);
+
+    for (const b of monthBookings) stats[idx(categorize(b.event_type))].count += 1;
+
+    for (const inv of paidThisMonth) {
+      const cat = inv.booking_id ? bookingCategory.get(inv.booking_id) : null;
+      const key = cat ?? categorize(inv.client_name); // fallback if no booking link
+      const i = idx(key);
+      if (i >= 0) stats[i].revenue += Number(inv.amount_paid || 0);
+    }
+
+    return stats.map((s) => ({
+      ...s,
+      percent: totalCount > 0 ? Math.round((s.count / totalCount) * 100) : 0,
+      totalCount,
+    }));
+  }, [bookings.data, invoices.data, monthStart, monthEnd]);
+
   const alerts: { tone: "danger" | "warning" | "info"; text: string }[] = [];
   if (lowStock.length) alerts.push({ tone: "warning", text: `${lowStock.length} inventory item${lowStock.length > 1 ? "s" : ""} low on stock` });
   const overdue = outstandingInvoices.filter((i) => i.daysOverdue > 0);
