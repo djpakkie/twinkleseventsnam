@@ -168,9 +168,20 @@ function Quote() {
                 <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="qinput" />
               </Field>
               <Field label="Event type" required>
+                <EventTypeSelect value={eventType?.id ?? null} onChange={handleEventTypeChange} required />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Service / package" required>
                 <select value={form.serviceSlug} onChange={(e) => setForm({ ...form, serviceSlug: e.target.value })} className="qinput">
-                  <option value="">Select a service…</option>
+                  <option value="">Select a package…</option>
                   {services?.map((s) => <option key={s.id} value={s.slug}>{s.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Budget range">
+                <select value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className="qinput">
+                  <option value="">Select a range…</option>
+                  {BUDGET_RANGES.map((b) => <option key={b} value={b}>{b}</option>)}
                 </select>
               </Field>
             </Row>
