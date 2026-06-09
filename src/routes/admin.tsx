@@ -1285,3 +1285,162 @@ function MobileView() {
     </div>
   );
 }
+
+function EventTypesView() {
+  type ET = {
+    id: string; name: string; slug: string; description: string | null;
+    default_service_id: string | null; archived: boolean; sort_order: number;
+  };
+  type Svc = { id: string; name: string };
+  const [items, setItems] = useState<ET[]>([]);
+  const [services, setServices] = useState<Svc[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [editing, setEditing] = useState<Partial<ET> | null>(null);
+  const [search, setSearch] = useState("");
+
+  async function refresh() {
+    const { data } = await supabase.from("event_types").select("*").order("sort_order");
+    setItems((data ?? []) as ET[]);
+  }
+  useEffect(() => {
+    refresh();
+    supabase.from("services").select("id,name").eq("active", true).order("sort_order").then(({ data }) => {
+      setServices((data ?? []) as Svc[]);
+    });
+  }, []);
+
+  async function save() {
+    if (!editing?.name) return;
+    const payload = {
+      name: editing.name!.trim(),
+      slug: (editing.slug || editing.name!).toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      description: editing.description || null,
+      default_service_id: editing.default_service_id || null,
+      sort_order: editing.sort_order ?? (items.length + 1) * 10,
+      archived: editing.archived ?? false,
+    };
+    const { error } = editing.id
+      ? await supabase.from("event_types").update(payload).eq("id", editing.id)
+      : await supabase.from("event_types").insert(payload);
+    if (error) { alert(error.message); return; }
+    setEditing(null);
+    refresh();
+  }
+
+  async function setArchived(id: string, archived: boolean) {
+    const { error } = await supabase.from("event_types").update({ archived }).eq("id", id);
+    if (error) { alert(error.message); return; }
+    refresh();
+  }
+
+  const filtered = items
+    .filter((t) => showArchived || !t.archived)
+    .filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search event types…"
+          className="px-3 py-2 border border-brand-primary/15 text-sm flex-1 min-w-[200px] bg-transparent"
+        />
+        <label className="flex items-center gap-2 text-xs text-brand-primary/70">
+          <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+          Show archived
+        </label>
+        <button
+          onClick={() => setEditing({ name: "", description: "", archived: false })}
+          className="px-4 py-2 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent"
+        >
+          + Add event type
+        </button>
+      </div>
+
+      <div className="border border-brand-primary/10 bg-card">
+        <div className="grid grid-cols-[1fr_1fr_120px_120px] gap-4 px-4 py-3 text-[10px] uppercase tracking-widest text-brand-primary/60 border-b border-brand-primary/10">
+          <span>Name</span>
+          <span>Default package</span>
+          <span>Status</span>
+          <span className="text-right">Actions</span>
+        </div>
+        {filtered.length === 0 && (
+          <div className="px-4 py-8 text-sm text-brand-primary/50">No event types match.</div>
+        )}
+        {filtered.map((t) => {
+          const svc = services.find((s) => s.id === t.default_service_id);
+          return (
+            <div key={t.id} className="grid grid-cols-[1fr_1fr_120px_120px] gap-4 px-4 py-3 text-sm border-b border-brand-primary/5 items-center">
+              <div>
+                <p className={t.archived ? "line-through text-brand-primary/50" : ""}>{t.name}</p>
+                {t.description && <p className="text-xs text-brand-primary/50 mt-0.5">{t.description}</p>}
+              </div>
+              <span className="text-brand-primary/70">{svc?.name ?? <span className="text-brand-primary/30">—</span>}</span>
+              <span className={`text-[10px] uppercase tracking-widest font-bold ${t.archived ? "text-brand-primary/40" : "text-green-700"}`}>
+                {t.archived ? "Archived" : "Active"}
+              </span>
+              <div className="flex justify-end gap-3 text-xs">
+                <button onClick={() => setEditing(t)} className="hover:text-brand-accent underline-offset-4 hover:underline">Edit</button>
+                <button onClick={() => setArchived(t.id, !t.archived)} className="hover:text-brand-accent underline-offset-4 hover:underline">
+                  {t.archived ? "Restore" : "Archive"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing?.id ? "Edit event type" : "New event type"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-widest font-semibold mb-2">Name</span>
+              <input
+                value={editing?.name ?? ""}
+                onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                className="w-full px-3 py-2 border border-brand-primary/15 bg-transparent text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-widest font-semibold mb-2">Description (optional)</span>
+              <textarea
+                rows={2}
+                value={editing?.description ?? ""}
+                onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                className="w-full px-3 py-2 border border-brand-primary/15 bg-transparent text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-widest font-semibold mb-2">Default decoration package</span>
+              <select
+                value={editing?.default_service_id ?? ""}
+                onChange={(e) => setEditing({ ...editing, default_service_id: e.target.value || null })}
+                className="w-full px-3 py-2 border border-brand-primary/15 bg-transparent text-sm"
+              >
+                <option value="">— None —</option>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-widest font-semibold mb-2">Sort order</span>
+              <input
+                type="number"
+                value={editing?.sort_order ?? 0}
+                onChange={(e) => setEditing({ ...editing, sort_order: parseInt(e.target.value, 10) || 0 })}
+                className="w-full px-3 py-2 border border-brand-primary/15 bg-transparent text-sm"
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <button onClick={() => setEditing(null)} className="px-4 py-2 text-xs uppercase tracking-widest">Cancel</button>
+            <button onClick={save} className="px-4 py-2 bg-brand-primary text-primary-foreground text-xs uppercase tracking-widest font-bold">Save</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
