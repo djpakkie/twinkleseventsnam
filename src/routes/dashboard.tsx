@@ -101,6 +101,26 @@ function useDashboardData() {
 const currency = (n: number) =>
   new Intl.NumberFormat("en-NA", { style: "currency", currency: "NAD", maximumFractionDigits: 0 }).format(n || 0);
 
+const EVENT_CATEGORIES: { key: string; color: string; match: (t: string) => boolean }[] = [
+  { key: "Weddings", color: "#d946ef", match: (t) => /wedding/i.test(t) },
+  { key: "Birthdays", color: "#f59e0b", match: (t) => /birthday/i.test(t) },
+  {
+    key: "Corporate Events",
+    color: "#0ea5e9",
+    match: (t) =>
+      /(corporate|product launch|conference|seminar|workshop|awards|gala|team building|networking|year-end|year end|exhibition|trade show)/i.test(t),
+  },
+  { key: "Baby Showers", color: "#10b981", match: (t) => /baby shower/i.test(t) },
+  { key: "Funerals", color: "#64748b", match: (t) => /(funeral|memorial)/i.test(t) },
+  { key: "Other Events", color: "#a855f7", match: () => true },
+];
+
+function categorize(label: string | null | undefined): string {
+  const t = (label ?? "").toString();
+  for (const c of EVENT_CATEGORIES) if (c.match(t)) return c.key;
+  return "Other Events";
+}
+
 function DashboardPage() {
   const { inventory, invoices, quotations, bookings, activity } = useDashboardData();
 
