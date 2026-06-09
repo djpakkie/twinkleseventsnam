@@ -196,12 +196,6 @@ function Quote() {
             <Field label="Venue / location">
               <input value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} className="qinput" placeholder="e.g. Swakopmund, private estate" />
             </Field>
-            <Field label="Budget range">
-              <select value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className="qinput">
-                <option value="">Select a range…</option>
-                {BUDGET_RANGES.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </Field>
             <Field label="Add-ons (optional)">
               <div className="grid sm:grid-cols-2 gap-2 mt-1">
                 {ADDONS.map((a) => (
