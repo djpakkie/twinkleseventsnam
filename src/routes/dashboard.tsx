@@ -21,7 +21,21 @@ import {
   Eye,
   Send,
   ArrowRightCircle,
+  PieChart as PieIcon,
 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+} from "recharts";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
