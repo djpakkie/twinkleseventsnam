@@ -34,7 +34,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Legend,
+  Legend as RechartsLegend,
 } from "recharts";
 
 export const Route = createFileRoute("/dashboard")({
