@@ -54,6 +54,7 @@ type SectionId =
   | "statements"
   | "calendar"
   | "inventory"
+  | "event-types"
   | "payments"
   | "staff"
   | "notifications"
@@ -70,6 +71,7 @@ const sections: { id: SectionId; label: string }[] = [
   { id: "statements", label: "Statements" },
   { id: "calendar", label: "Calendar" },
   { id: "inventory", label: "Inventory" },
+  { id: "event-types", label: "Event types" },
   { id: "payments", label: "Payments" },
   { id: "staff", label: "Staff" },
   { id: "vendors", label: "Vendors" },
