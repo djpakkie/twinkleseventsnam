@@ -21,7 +21,21 @@ import {
   Eye,
   Send,
   ArrowRightCircle,
+  PieChart as PieIcon,
 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend as RechartsLegend,
+} from "recharts";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -87,6 +101,26 @@ function useDashboardData() {
 const currency = (n: number) =>
   new Intl.NumberFormat("en-NA", { style: "currency", currency: "NAD", maximumFractionDigits: 0 }).format(n || 0);
 
+const EVENT_CATEGORIES: { key: string; color: string; match: (t: string) => boolean }[] = [
+  { key: "Weddings", color: "#d946ef", match: (t) => /wedding/i.test(t) },
+  { key: "Birthdays", color: "#f59e0b", match: (t) => /birthday/i.test(t) },
+  {
+    key: "Corporate Events",
+    color: "#0ea5e9",
+    match: (t) =>
+      /(corporate|product launch|conference|seminar|workshop|awards|gala|team building|networking|year-end|year end|exhibition|trade show)/i.test(t),
+  },
+  { key: "Baby Showers", color: "#10b981", match: (t) => /baby shower/i.test(t) },
+  { key: "Funerals", color: "#64748b", match: (t) => /(funeral|memorial)/i.test(t) },
+  { key: "Other Events", color: "#a855f7", match: () => true },
+];
+
+function categorize(label: string | null | undefined): string {
+  const t = (label ?? "").toString();
+  for (const c of EVENT_CATEGORIES) if (c.match(t)) return c.key;
+  return "Other Events";
+}
+
 function DashboardPage() {
   const { inventory, invoices, quotations, bookings, activity } = useDashboardData();
 
@@ -146,6 +180,45 @@ function DashboardPage() {
     .filter((i) => i.paid_at && new Date(i.paid_at) >= monthStart && new Date(i.paid_at) <= monthEnd)
     .reduce((sum, i) => sum + Number(i.amount_paid || 0), 0);
 
+  // Event Breakdown — bookings this month, by category, with attached paid revenue this month
+  const eventBreakdown = useMemo(() => {
+    const monthBookings = (bookings.data ?? []).filter((b) => {
+      const d = new Date(b.event_date);
+      return d >= monthStart && d <= monthEnd && b.status !== "cancelled";
+    });
+    const totalCount = monthBookings.length;
+
+    const bookingCategory = new Map<string, string>();
+    for (const b of monthBookings) bookingCategory.set(b.id, categorize(b.event_type));
+
+    const paidThisMonth = (invoices.data ?? []).filter(
+      (i) => i.paid_at && new Date(i.paid_at) >= monthStart && new Date(i.paid_at) <= monthEnd,
+    );
+
+    const stats = EVENT_CATEGORIES.map((c) => ({
+      key: c.key,
+      color: c.color,
+      count: 0,
+      revenue: 0,
+    }));
+    const idx = (k: string) => stats.findIndex((s) => s.key === k);
+
+    for (const b of monthBookings) stats[idx(categorize(b.event_type))].count += 1;
+
+    for (const inv of paidThisMonth) {
+      const cat = inv.booking_id ? bookingCategory.get(inv.booking_id) : null;
+      const key = cat ?? categorize(inv.client_name); // fallback if no booking link
+      const i = idx(key);
+      if (i >= 0) stats[i].revenue += Number(inv.amount_paid || 0);
+    }
+
+    return stats.map((s) => ({
+      ...s,
+      percent: totalCount > 0 ? Math.round((s.count / totalCount) * 100) : 0,
+      totalCount,
+    }));
+  }, [bookings.data, invoices.data, monthStart, monthEnd]);
+
   const alerts: { tone: "danger" | "warning" | "info"; text: string }[] = [];
   if (lowStock.length) alerts.push({ tone: "warning", text: `${lowStock.length} inventory item${lowStock.length > 1 ? "s" : ""} low on stock` });
   const overdue = outstandingInvoices.filter((i) => i.daysOverdue > 0);
@@ -198,6 +271,10 @@ function DashboardPage() {
           <Kpi icon={TrendingUp} label="Revenue this month" value={currency(revenueThisMonth)} />
           <Kpi icon={CheckCircle2} label="Confirmed this month" value={confirmedThisMonth.length} />
         </section>
+
+        <EventBreakdownSection stats={eventBreakdown} />
+
+
 
         <section className="grid gap-6 lg:grid-cols-2">
           <Card>
@@ -491,5 +568,99 @@ function Legend({ color, label }: { color: string; label: string }) {
       <span className={`inline-block w-2 h-2 rounded-full ${color}`} />
       <span>{label}</span>
     </div>
+  );
+}
+
+type BreakdownStat = { key: string; color: string; count: number; revenue: number; percent: number; totalCount: number };
+
+function EventBreakdownSection({ stats }: { stats: BreakdownStat[] }) {
+  const totalCount = stats[0]?.totalCount ?? 0;
+  const totalRevenue = stats.reduce((s, x) => s + x.revenue, 0);
+  const pieData = stats.filter((s) => s.count > 0);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-xl font-serif tracking-tight flex items-center gap-2">
+            <PieIcon className="w-4 h-4" /> Event breakdown
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {totalCount} booking{totalCount === 1 ? "" : "s"} this month · {currency(totalRevenue)} paid revenue
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {stats.map((s) => (
+          <Card key={s.key}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.key}</p>
+              </div>
+              <p className="text-2xl font-semibold leading-none">{s.count}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.percent}% of bookings</p>
+              <p className="text-sm font-medium mt-2">{currency(s.revenue)}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Bookings by event type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pieData.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-12 text-center">No bookings this month yet.</p>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} dataKey="count" nameKey="key" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                      {pieData.map((s) => (
+                        <Cell key={s.key} fill={s.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number, _name, item) => {
+                        const s = item?.payload as BreakdownStat | undefined;
+                        return [`${value} (${s?.percent ?? 0}%)`, s?.key ?? ""];
+                      }}
+                    />
+                    <RechartsLegend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue by event type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats} margin={{ top: 8, right: 8, left: 0, bottom: 32 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="key" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                  <YAxis tickFormatter={(v) => `N$${Math.round(v / 1000)}k`} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => currency(Number(v))} />
+                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                    {stats.map((s) => (
+                      <Cell key={s.key} fill={s.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
   );
 }
