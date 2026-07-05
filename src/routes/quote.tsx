@@ -54,12 +54,27 @@ function Quote() {
 
   const [submitted, setSubmitted] = useState<{ id: string; total: number } | null>(null);
   const [eventType, setEventType] = useState<EventType | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
     serviceSlug: pkg || "",
     date: "", guests: "50", venue: "", notes: "", budget: "",
     addons: [] as string[],
   });
+
+  function handleClientChange(c: Client | null) {
+    setClient(c);
+    if (c) {
+      setForm((f) => ({
+        ...f,
+        name: fullName(c) || f.name,
+        email: c.email ?? f.email,
+        phone: c.phone ?? f.phone,
+        venue: f.venue || c.physical_address || "",
+      }));
+    }
+  }
+
 
   const selectedService = useMemo(
     () => services?.find((s) => s.slug === form.serviceSlug),
