@@ -323,6 +323,7 @@ function QuotationsView({
   setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
 }) {
   const [form, setForm] = useState({ client: "", type: "", guests: "", amount: "", date: "" });
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [selected, setSelected] = useState<Quotation | null>(null);
