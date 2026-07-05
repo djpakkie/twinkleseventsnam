@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { EventTypeSelect, type EventType } from "@/components/EventTypeSelect";
+import { ClientSelect, type Client, fullName } from "@/components/ClientSelect";
 
 export const Route = createFileRoute("/quote")({
   validateSearch: (s: Record<string, unknown>) => ({ pkg: (s.pkg as string) || "" }),
@@ -53,12 +54,27 @@ function Quote() {
 
   const [submitted, setSubmitted] = useState<{ id: string; total: number } | null>(null);
   const [eventType, setEventType] = useState<EventType | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
     serviceSlug: pkg || "",
     date: "", guests: "50", venue: "", notes: "", budget: "",
     addons: [] as string[],
   });
+
+  function handleClientChange(c: Client | null) {
+    setClient(c);
+    if (c) {
+      setForm((f) => ({
+        ...f,
+        name: fullName(c) || f.name,
+        email: c.email ?? f.email,
+        phone: c.phone ?? f.phone,
+        venue: f.venue || c.physical_address || "",
+      }));
+    }
+  }
+
 
   const selectedService = useMemo(
     () => services?.find((s) => s.slug === form.serviceSlug),
@@ -93,6 +109,7 @@ function Quote() {
       service_id: selectedService.id,
       event_type_id: eventType.id,
       event_type: eventType.name,
+      client_id: client?.id ?? null,
       client_name: form.name,
       client_email: form.email,
       client_phone: form.phone || null,
@@ -161,6 +178,12 @@ function Quote() {
 
         <form onSubmit={onSubmit} className="grid lg:grid-cols-[1fr_320px] gap-10 items-start">
           <div className="space-y-7 bg-card p-8 md:p-10 border border-brand-primary/5 shadow-sm">
+            <Field label="Client">
+              <ClientSelect value={client?.id ?? null} onChange={handleClientChange} placeholder="Search existing clients or add a new one…" />
+              <span className="mt-1.5 block text-[11px] text-brand-primary/50">
+                Optional — selecting a client auto-fills the contact details below and links this booking to their profile.
+              </span>
+            </Field>
             <Row>
               <Field label="Full name" required>
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="qinput" />

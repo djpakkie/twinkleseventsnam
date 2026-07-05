@@ -20,7 +20,9 @@ import {
   vendors as seedVendors,
   adminUser,
 } from "@/lib/mockData";
-import { Eye, Pencil, Download, Mail, FileText } from "lucide-react";
+import { Eye, Pencil, Download, Mail, FileText, Search, Plus, Trash2, User } from "lucide-react";
+import { ClientSelect, fullName, type Client } from "@/components/ClientSelect";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   downloadQuotationPDF,
   downloadInvoicePDF,
@@ -49,6 +51,7 @@ const statusStyles: Record<string, string> = {
 type SectionId =
   | "overview"
   | "leads"
+  | "clients"
   | "quotations"
   | "invoices"
   | "statements"
@@ -66,6 +69,7 @@ type SectionId =
 const sections: { id: SectionId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "leads", label: "Lead pipeline" },
+  { id: "clients", label: "Clients" },
   { id: "quotations", label: "Quotations" },
   { id: "invoices", label: "Invoices" },
   { id: "statements", label: "Statements" },
@@ -221,6 +225,7 @@ function Admin() {
             />
           )}
           {active === "leads" && <LeadsView />}
+          {active === "clients" && <ClientsView />}
           {active === "quotations" && (
             <QuotationsView
               quotations={quotations}
@@ -318,6 +323,7 @@ function QuotationsView({
   setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
 }) {
   const [form, setForm] = useState({ client: "", type: "", guests: "", amount: "", date: "" });
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [selected, setSelected] = useState<Quotation | null>(null);
@@ -379,6 +385,19 @@ function QuotationsView({
       <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
         <h3 className="text-lg font-serif italic mb-6">Generate quotation</h3>
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="block md:col-span-2">
+            <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Client</span>
+            <div className="mt-1">
+              <ClientSelect
+                value={selectedClient?.id ?? null}
+                onChange={(c) => {
+                  setSelectedClient(c);
+                  if (c) setForm((f) => ({ ...f, client: fullName(c) }));
+                }}
+                placeholder="Search clients or add new…"
+              />
+            </div>
+          </label>
           {[
             { k: "client", label: "Client name", type: "text" },
             { k: "type", label: "Event type", type: "text" },
@@ -404,6 +423,7 @@ function QuotationsView({
           </div>
         </form>
       </div>
+
 
       <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
         <h3 className="text-lg font-serif italic mb-6">All quotations</h3>
@@ -1436,5 +1456,422 @@ function EventTypesView() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ============ Clients ============
+
+type ClientRow = Client;
+
+function ClientsView() {
+  const qc = useQueryClient();
+  const [q, setQ] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
+
+  const { data: clients } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clients").select("*").order("first_name");
+      if (error) throw error;
+      return (data ?? []) as ClientRow[];
+    },
+  });
+
+  const filtered = (clients ?? []).filter((c) => {
+    const n = q.trim().toLowerCase();
+    if (!n) return true;
+    return [fullName(c), c.company_name ?? "", c.email ?? "", c.phone ?? "", c.alt_phone ?? ""]
+      .join(" ")
+      .toLowerCase()
+      .includes(n);
+  });
+
+  async function deleteClient(id: string) {
+    if (!confirm("Delete this client? Their historical bookings, quotations, and invoices will be kept but unlinked.")) return;
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    if (error) { alert(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["clients"] });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <h3 className="text-lg font-serif italic">Client directory</h3>
+          <button
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors"
+          >
+            <Plus className="size-3.5" /> Add client
+          </button>
+        </div>
+        <div className="flex items-center gap-2 border border-brand-primary/15 bg-brand-bg px-3 py-2 mb-6 max-w-md">
+          <Search className="size-3.5 text-brand-primary/40" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by name, phone, email, or company…"
+            className="flex-1 bg-transparent text-sm outline-none"
+          />
+        </div>
+        {filtered.length === 0 ? (
+          <p className="text-sm text-brand-primary/60 py-8 text-center">
+            {clients?.length ? "No clients match your search." : "No clients yet. Add your first client above."}
+          </p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-[10px] uppercase tracking-widest text-brand-primary/40 text-left">
+                <th className="pb-3 font-medium">Name</th>
+                <th className="pb-3 font-medium">Company</th>
+                <th className="pb-3 font-medium">Email</th>
+                <th className="pb-3 font-medium">Phone</th>
+                <th className="pb-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((c) => (
+                <tr key={c.id} className="border-t border-brand-primary/5">
+                  <td className="py-3">
+                    <button
+                      onClick={() => setProfileId(c.id)}
+                      className="font-serif hover:text-brand-accent transition-colors"
+                    >
+                      {fullName(c) || "—"}
+                    </button>
+                  </td>
+                  <td className="py-3 text-brand-primary/70">{c.company_name || "—"}</td>
+                  <td className="py-3 text-brand-primary/70">{c.email || "—"}</td>
+                  <td className="py-3 text-brand-primary/70">{c.phone || "—"}</td>
+                  <td className="py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setProfileId(c.id)}
+                        className="p-1.5 hover:bg-brand-bg rounded transition-colors"
+                        title="View profile"
+                      >
+                        <User className="size-3.5 text-brand-primary/60" />
+                      </button>
+                      <button
+                        onClick={() => deleteClient(c.id)}
+                        className="p-1.5 hover:bg-brand-bg rounded transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="size-3.5 text-brand-primary/60" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <AddClientDialog open={addOpen} onOpenChange={setAddOpen} onCreated={(c) => setProfileId(c.id)} />
+      <ClientProfileDialog clientId={profileId} onOpenChange={(v) => !v && setProfileId(null)} />
+    </div>
+  );
+}
+
+function AddClientDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onCreated?: (c: ClientRow) => void;
+}) {
+  const qc = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    first_name: "", last_name: "", company_name: "", phone: "", alt_phone: "",
+    email: "", physical_address: "", notes: "",
+  });
+
+  useEffect(() => {
+    if (open) {
+      setForm({ first_name: "", last_name: "", company_name: "", phone: "", alt_phone: "", email: "", physical_address: "", notes: "" });
+    }
+  }, [open]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.first_name.trim()) return;
+    setSaving(true);
+    const { data, error } = await supabase.from("clients").insert({
+      first_name: form.first_name.trim(),
+      last_name: form.last_name.trim(),
+      company_name: form.company_name.trim() || null,
+      phone: form.phone.trim() || null,
+      alt_phone: form.alt_phone.trim() || null,
+      email: form.email.trim() || null,
+      physical_address: form.physical_address.trim() || null,
+      notes: form.notes.trim() || null,
+    }).select("*").single();
+    setSaving(false);
+    if (error) { alert(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["clients"] });
+    onCreated?.(data as ClientRow);
+    onOpenChange(false);
+  }
+
+  const inputCls = "mt-1 w-full border border-brand-primary/15 bg-brand-bg px-3 py-2 text-sm focus:outline-none focus:border-brand-accent";
+  const labelCls = "text-[10px] uppercase tracking-widest text-brand-primary/50";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif italic">Add client</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label><span className={labelCls}>First name *</span>
+            <input required value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className={inputCls} /></label>
+          <label><span className={labelCls}>Last name</span>
+            <input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} className={inputCls} /></label>
+          <label><span className={labelCls}>Company</span>
+            <input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className={inputCls} /></label>
+          <label><span className={labelCls}>Email</span>
+            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} /></label>
+          <label><span className={labelCls}>Phone</span>
+            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></label>
+          <label><span className={labelCls}>Alternative phone</span>
+            <input value={form.alt_phone} onChange={(e) => setForm({ ...form, alt_phone: e.target.value })} className={inputCls} /></label>
+          <label className="md:col-span-2"><span className={labelCls}>Physical address</span>
+            <input value={form.physical_address} onChange={(e) => setForm({ ...form, physical_address: e.target.value })} className={inputCls} /></label>
+          <label className="md:col-span-2"><span className={labelCls}>Notes</span>
+            <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " resize-none"} /></label>
+          <DialogFooter className="md:col-span-2">
+            <button type="submit" disabled={saving} className="px-6 py-3 bg-brand-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-brand-accent transition-colors disabled:opacity-60">
+              {saving ? "Saving…" : "Save client"}
+            </button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClientProfileDialog({
+  clientId,
+  onOpenChange,
+}: {
+  clientId: string | null;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const open = !!clientId;
+
+  const { data: client } = useQuery({
+    queryKey: ["client", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clients").select("*").eq("id", clientId!).single();
+      if (error) throw error;
+      return data as ClientRow;
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: bookings } = useQuery({
+    queryKey: ["client-bookings", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bookings").select("*").eq("client_id", clientId!).order("event_date", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: quotations } = useQuery({
+    queryKey: ["client-quotations", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("quotations").select("*").eq("client_id", clientId!).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: invoices } = useQuery({
+    queryKey: ["client-invoices", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("invoices").select("*").eq("client_id", clientId!).order("issued_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!clientId,
+  });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = (bookings ?? []).filter((b: any) => b.event_date && b.event_date >= today);
+  const totalRevenue = (invoices ?? [])
+    .filter((i: any) => i.status === "paid")
+    .reduce((s: number, i: any) => s + Number(i.amount_paid || i.amount || 0), 0);
+  const outstanding = (invoices ?? [])
+    .reduce((s: number, i: any) => s + Math.max(0, Number(i.amount || 0) - Number(i.amount_paid || 0)), 0);
+
+  const nad = (n: number) => `N$${Math.round(n).toLocaleString()}`;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-serif italic text-2xl">
+            {client ? fullName(client) : "Client profile"}
+          </DialogTitle>
+        </DialogHeader>
+        {!client ? (
+          <p className="text-sm text-brand-primary/60 py-8 text-center">Loading…</p>
+        ) : (
+          <div className="space-y-6">
+            {/* Contact */}
+            <section className="bg-brand-bg p-5 border border-brand-primary/5">
+              <p className="eyebrow mb-3">Contact information</p>
+              <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                <ProfileField label="Company" value={client.company_name} />
+                <ProfileField label="Email" value={client.email} />
+                <ProfileField label="Phone" value={client.phone} />
+                <ProfileField label="Alt. phone" value={client.alt_phone} />
+                <ProfileField label="Address" value={client.physical_address} span2 />
+                <ProfileField label="Notes" value={client.notes} span2 />
+              </div>
+            </section>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Kpi label="Bookings" value={String(bookings?.length ?? 0)} />
+              <Kpi label="Quotations" value={String(quotations?.length ?? 0)} />
+              <Kpi label="Invoices" value={String(invoices?.length ?? 0)} />
+              <Kpi label="Total revenue" value={nad(totalRevenue)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Kpi label="Upcoming events" value={String(upcoming.length)} />
+              <Kpi label="Outstanding balance" value={nad(outstanding)} tone={outstanding > 0 ? "warn" : undefined} />
+            </div>
+
+            {/* Bookings history */}
+            <section>
+              <h4 className="text-sm font-serif italic mb-2">Bookings history</h4>
+              {(bookings?.length ?? 0) === 0 ? (
+                <p className="text-xs text-brand-primary/50 py-3">No bookings yet.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-widest text-brand-primary/40 text-left">
+                      <th className="pb-2 font-medium">Event type</th>
+                      <th className="pb-2 font-medium">Date</th>
+                      <th className="pb-2 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings!.map((b: any) => (
+                      <tr key={b.id} className="border-t border-brand-primary/5">
+                        <td className="py-2">{b.event_type || "—"}</td>
+                        <td className="py-2 text-brand-primary/70">{b.event_date}</td>
+                        <td className="py-2"><StatusPill status={b.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+
+            {/* Quotations history */}
+            <section>
+              <h4 className="text-sm font-serif italic mb-2">Quotations history</h4>
+              {(quotations?.length ?? 0) === 0 ? (
+                <p className="text-xs text-brand-primary/50 py-3">No quotations yet.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-widest text-brand-primary/40 text-left">
+                      <th className="pb-2 font-medium">Quote #</th>
+                      <th className="pb-2 font-medium">Amount</th>
+                      <th className="pb-2 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quotations!.map((q: any) => (
+                      <tr key={q.id} className="border-t border-brand-primary/5">
+                        <td className="py-2 font-serif">{q.quote_number}</td>
+                        <td className="py-2">{nad(Number(q.amount))}</td>
+                        <td className="py-2"><StatusPill status={q.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+
+            {/* Invoices history */}
+            <section>
+              <h4 className="text-sm font-serif italic mb-2">Invoices history</h4>
+              {(invoices?.length ?? 0) === 0 ? (
+                <p className="text-xs text-brand-primary/50 py-3">No invoices yet.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-widest text-brand-primary/40 text-left">
+                      <th className="pb-2 font-medium">Invoice #</th>
+                      <th className="pb-2 font-medium">Amount</th>
+                      <th className="pb-2 font-medium">Payment</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices!.map((i: any) => (
+                      <tr key={i.id} className="border-t border-brand-primary/5">
+                        <td className="py-2 font-serif">{i.invoice_number}</td>
+                        <td className="py-2">{nad(Number(i.amount))}</td>
+                        <td className="py-2"><StatusPill status={i.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ProfileField({ label, value, span2 }: { label: string; value: string | null | undefined; span2?: boolean }) {
+  return (
+    <div className={span2 ? "sm:col-span-2" : ""}>
+      <p className="text-[10px] uppercase tracking-widest text-brand-primary/50 mb-0.5">{label}</p>
+      <p className="text-sm">{value || <span className="text-brand-primary/40">—</span>}</p>
+    </div>
+  );
+}
+
+function Kpi({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+  return (
+    <div className={`p-4 border ${tone === "warn" ? "border-amber-200 bg-amber-50" : "border-brand-primary/10 bg-brand-bg"}`}>
+      <p className="text-[10px] uppercase tracking-widest text-brand-primary/50 mb-1">{label}</p>
+      <p className="text-xl font-serif italic">{value}</p>
+    </div>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone: Record<string, string> = {
+    paid: "bg-green-50 text-green-700",
+    confirmed: "bg-green-50 text-green-700",
+    accepted: "bg-green-50 text-green-700",
+    completed: "bg-blue-50 text-blue-700",
+    pending: "bg-amber-50 text-amber-800",
+    unpaid: "bg-amber-50 text-amber-800",
+    sent: "bg-amber-50 text-amber-800",
+    draft: "bg-brand-soft text-brand-primary/70",
+    cancelled: "bg-red-50 text-red-700",
+    overdue: "bg-red-50 text-red-700",
+  };
+  return (
+    <span className={`px-2 py-0.5 text-[9px] uppercase tracking-widest font-bold ${tone[status] || "bg-brand-soft text-brand-primary/70"}`}>
+      {status || "—"}
+    </span>
   );
 }
