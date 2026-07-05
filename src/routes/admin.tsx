@@ -20,7 +20,9 @@ import {
   vendors as seedVendors,
   adminUser,
 } from "@/lib/mockData";
-import { Eye, Pencil, Download, Mail, FileText } from "lucide-react";
+import { Eye, Pencil, Download, Mail, FileText, Search, Plus, Trash2, User } from "lucide-react";
+import { ClientSelect, fullName, type Client } from "@/components/ClientSelect";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   downloadQuotationPDF,
   downloadInvoicePDF,
