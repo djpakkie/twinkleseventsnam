@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { format, differenceInDays, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, startOfWeek, endOfWeek } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,8 +45,16 @@ export const Route = createFileRoute("/dashboard")({
       { name: "description", content: "Real-time business operations overview." },
     ],
   }),
-  component: DashboardPage,
+  component: DashboardRoute,
 });
+
+function DashboardRoute() {
+  return (
+    <RequireAdmin>
+      <DashboardPage />
+    </RequireAdmin>
+  );
+}
 
 const REFETCH_MS = 60_000;
 

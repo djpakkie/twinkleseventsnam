@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +39,16 @@ export const Route = createFileRoute("/admin")({
       { name: "description", content: "Manage leads, quotes, bookings, inventory, staff, vendors, and payments." },
     ],
   }),
-  component: Admin,
+  component: AdminRoute,
 });
+
+function AdminRoute() {
+  return (
+    <RequireAdmin>
+      <Admin />
+    </RequireAdmin>
+  );
+}
 
 const statusStyles: Record<string, string> = {
   new: "bg-brand-soft text-brand-primary/70",
