@@ -49,6 +49,7 @@ const statusStyles: Record<string, string> = {
 type SectionId =
   | "overview"
   | "leads"
+  | "clients"
   | "quotations"
   | "invoices"
   | "statements"
@@ -66,6 +67,7 @@ type SectionId =
 const sections: { id: SectionId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "leads", label: "Lead pipeline" },
+  { id: "clients", label: "Clients" },
   { id: "quotations", label: "Quotations" },
   { id: "invoices", label: "Invoices" },
   { id: "statements", label: "Statements" },
