@@ -843,18 +843,12 @@ function CalendarView() {
 
   useEffect(() => {
     fetchBookings();
-    const channel = supabase
-      .channel("admin-bookings-calendar")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "bookings" },
-        () => fetchBookings(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Poll for updates instead of using Realtime (bookings contain PII
+    // and are no longer published to the realtime channel).
+    const interval = setInterval(fetchBookings, 30000);
+    return () => clearInterval(interval);
   }, []);
+
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
