@@ -79,12 +79,17 @@ function Quote() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) {
+      toast.error("Please sign in to submit a booking.");
+      navigate({ to: "/auth" });
+      return;
+    }
     if (!form.name || !form.email || !selectedService || !form.date || !eventType) {
       toast.error("Please complete name, email, event type, service, and date.");
       return;
     }
     const { data, error } = await supabase.from("bookings").insert({
-      user_id: user?.id ?? null,
+      user_id: user.id,
       service_id: selectedService.id,
       event_type_id: eventType.id,
       event_type: eventType.name,
@@ -104,6 +109,7 @@ function Quote() {
     toast.success("Booking received! We'll be in touch within 48 hours.");
     setSubmitted({ id: data.id, total: estimate });
   }
+
 
   function handleEventTypeChange(t: EventType | null) {
     setEventType(t);
