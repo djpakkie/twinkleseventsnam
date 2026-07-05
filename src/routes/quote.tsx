@@ -109,6 +109,7 @@ function Quote() {
       service_id: selectedService.id,
       event_type_id: eventType.id,
       event_type: eventType.name,
+      client_id: client?.id ?? null,
       client_name: form.name,
       client_email: form.email,
       client_phone: form.phone || null,
