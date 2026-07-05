@@ -223,6 +223,7 @@ function Admin() {
             />
           )}
           {active === "leads" && <LeadsView />}
+          {active === "clients" && <ClientsView />}
           {active === "quotations" && (
             <QuotationsView
               quotations={quotations}
