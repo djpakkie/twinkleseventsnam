@@ -52,6 +52,7 @@ export type Database = {
           addons: Json | null
           budget_range: string | null
           client_email: string
+          client_id: string | null
           client_name: string
           client_phone: string | null
           created_at: string
@@ -74,6 +75,7 @@ export type Database = {
           addons?: Json | null
           budget_range?: string | null
           client_email: string
+          client_id?: string | null
           client_name: string
           client_phone?: string | null
           created_at?: string
@@ -96,6 +98,7 @@ export type Database = {
           addons?: Json | null
           budget_range?: string | null
           client_email?: string
+          client_id?: string | null
           client_name?: string
           client_phone?: string | null
           created_at?: string
@@ -116,6 +119,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bookings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_event_type_id_fkey"
             columns: ["event_type_id"]
             isOneToOne: false
@@ -130,6 +140,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clients: {
+        Row: {
+          alt_phone: string | null
+          company_name: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          physical_address: string | null
+          updated_at: string
+        }
+        Insert: {
+          alt_phone?: string | null
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          physical_address?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alt_phone?: string | null
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          physical_address?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       event_types: {
         Row: {
@@ -217,6 +269,7 @@ export type Database = {
           amount_paid: number
           booking_id: string | null
           client_email: string
+          client_id: string | null
           client_name: string
           created_at: string
           due_date: string | null
@@ -233,6 +286,7 @@ export type Database = {
           amount_paid?: number
           booking_id?: string | null
           client_email: string
+          client_id?: string | null
           client_name: string
           created_at?: string
           due_date?: string | null
@@ -249,6 +303,7 @@ export type Database = {
           amount_paid?: number
           booking_id?: string | null
           client_email?: string
+          client_id?: string | null
           client_name?: string
           created_at?: string
           due_date?: string | null
@@ -266,6 +321,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -302,6 +364,7 @@ export type Database = {
           amount: number
           booking_id: string | null
           client_email: string
+          client_id: string | null
           client_name: string
           created_at: string
           id: string
@@ -315,6 +378,7 @@ export type Database = {
           amount?: number
           booking_id?: string | null
           client_email: string
+          client_id?: string | null
           client_name: string
           created_at?: string
           id?: string
@@ -328,6 +392,7 @@ export type Database = {
           amount?: number
           booking_id?: string | null
           client_email?: string
+          client_id?: string | null
           client_name?: string
           created_at?: string
           id?: string
@@ -343,6 +408,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
