@@ -178,6 +178,12 @@ function Quote() {
 
         <form onSubmit={onSubmit} className="grid lg:grid-cols-[1fr_320px] gap-10 items-start">
           <div className="space-y-7 bg-card p-8 md:p-10 border border-brand-primary/5 shadow-sm">
+            <Field label="Client">
+              <ClientSelect value={client?.id ?? null} onChange={handleClientChange} placeholder="Search existing clients or add a new one…" />
+              <span className="mt-1.5 block text-[11px] text-brand-primary/50">
+                Optional — selecting a client auto-fills the contact details below and links this booking to their profile.
+              </span>
+            </Field>
             <Row>
               <Field label="Full name" required>
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="qinput" />
