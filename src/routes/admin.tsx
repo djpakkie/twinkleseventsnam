@@ -385,6 +385,19 @@ function QuotationsView({
       <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
         <h3 className="text-lg font-serif italic mb-6">Generate quotation</h3>
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="block md:col-span-2">
+            <span className="text-[10px] uppercase tracking-widest text-brand-primary/50">Client</span>
+            <div className="mt-1">
+              <ClientSelect
+                value={selectedClient?.id ?? null}
+                onChange={(c) => {
+                  setSelectedClient(c);
+                  if (c) setForm((f) => ({ ...f, client: fullName(c) }));
+                }}
+                placeholder="Search clients or add new…"
+              />
+            </div>
+          </label>
           {[
             { k: "client", label: "Client name", type: "text" },
             { k: "type", label: "Event type", type: "text" },
@@ -410,6 +423,7 @@ function QuotationsView({
           </div>
         </form>
       </div>
+
 
       <div className="bg-card p-8 border border-brand-primary/5 shadow-sm">
         <h3 className="text-lg font-serif italic mb-6">All quotations</h3>
