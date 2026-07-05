@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { EventTypeSelect, type EventType } from "@/components/EventTypeSelect";
+import { ClientSelect, type Client, fullName } from "@/components/ClientSelect";
 
 export const Route = createFileRoute("/quote")({
   validateSearch: (s: Record<string, unknown>) => ({ pkg: (s.pkg as string) || "" }),
